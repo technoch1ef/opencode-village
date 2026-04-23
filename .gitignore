@@ -1,0 +1,13 @@
+node_modules
+dist
+
+# local files
+opencode-notifier-state.json
+
+# Local MCP config (per-machine, not tracked)
+opencode.local.json
+opencode.backup.json
+
+# bv (beads viewer) local config and caches
+.bv/
+.beads/
