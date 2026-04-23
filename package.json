@@ -1,0 +1,60 @@
+{
+  "name": "@technoch1ef/opencode-village",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Agentic Village workflow plugin for OpenCode — role-driven agents (mayor/worker/inspector/guard/envoy) backed by beads.",
+  "main": "./dist/plugin.js",
+  "types": "./dist/plugin.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/plugin.js",
+      "types": "./dist/plugin.d.ts"
+    },
+    "./assets/*": "./assets/*"
+  },
+  "bin": {
+    "opencode-village": "./dist/bin/init.js"
+  },
+  "files": [
+    "dist",
+    "assets"
+  ],
+  "scripts": {
+    "build": "echo 'TODO: B4'",
+    "typecheck": "bun x tsc --noEmit",
+    "test": "bun test"
+  },
+  "peerDependencies": {
+    "@technoch1ef/opencode-beads-rust": ">=0.1.0",
+    "@opencode-ai/plugin": ">=1.14"
+  },
+  "peerDependenciesMeta": {
+    "@technoch1ef/opencode-beads-rust": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@opencode-ai/plugin": "^1.14",
+    "@types/bun": "latest",
+    "typescript": "^5.8"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "url": "git+https://github.com/technoch1ef/opencode-village.git"
+  },
+  "license": "MIT",
+  "author": "technoch1ef",
+  "keywords": [
+    "opencode",
+    "plugin",
+    "agentic",
+    "village",
+    "beads",
+    "workflow"
+  ]
+}
