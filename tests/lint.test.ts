@@ -232,9 +232,9 @@ describe("lintBeadBody error messages are human-readable", () => {
 
 describe("scanSkillRegistry", () => {
   test("scans directories for skill subdirectories", async () => {
-    // Use the repo's own skills/ directory
+    // Use the repo's bundled assets/skills/ directory (always present in git)
     const configDir = resolve(import.meta.dir, "..");
-    const skills = await scanSkillRegistry([resolve(configDir, "skills")]);
+    const skills = await scanSkillRegistry([resolve(configDir, "assets", "skills")]);
     expect(skills.has("beads-workflow")).toBe(true);
     expect(skills.has("stack-typescript")).toBe(true);
   });
@@ -247,10 +247,10 @@ describe("scanSkillRegistry", () => {
   test("merges skills from multiple directories", async () => {
     const configDir = resolve(import.meta.dir, "..");
     const skills = await scanSkillRegistry([
-      resolve(configDir, "skills"),
       resolve(configDir, "assets", "skills"),
+      resolve(configDir, "skills"),
     ]);
-    // Should have skills from both dirs (deduplicated)
+    // Should have skills from bundled assets dir (skills/ may not exist in a fresh checkout)
     expect(skills.has("beads-workflow")).toBe(true);
     expect(skills.has("stack-typescript")).toBe(true);
   });
