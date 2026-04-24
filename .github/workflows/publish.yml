@@ -24,16 +24,16 @@ jobs:
           bun-version: latest
 
       - name: Install dependencies
-        run: npm ci
+        run: bun install --frozen-lockfile
 
       - name: Typecheck
-        run: npm run typecheck
+        run: bun run typecheck
 
       - name: Test
         run: bun test
 
       - name: Build
-        run: npm run build
+        run: bun run build
 
       - name: Publish to npm
         run: npm publish --provenance --access public
