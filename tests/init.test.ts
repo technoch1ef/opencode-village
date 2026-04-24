@@ -5,8 +5,8 @@
  *   @technoch1ef/opencode-beads-rust are correctly registered in opencode.json
  *   under various conditions.
  *
- * - installCat (commands): verifies that command assets are installed under
- *   commands/village/ (namespaced), not at the flat commands/ level.
+ * - installCat (commands): verifies that command assets are installed as
+ *   commands/village:<name>.md (colon-namespaced), not under a village/ subdirectory.
  */
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import {
@@ -213,8 +213,13 @@ describe("patchConfig", () => {
 
 // ── installCat: commands layout ─────────────────────────────────────────
 
-/** Village command file basenames that should be installed. */
-const VILLAGE_COMMANDS = ["work.md", "board.md", "envoy.md", "orphans.md"];
+/** Village command filenames (colon-namespaced) that should be installed. */
+const VILLAGE_COMMANDS = [
+  "village:work.md",
+  "village:board.md",
+  "village:envoy.md",
+  "village:orphans.md",
+];
 
 function makeInstallOpts(prefix: string, overrides: Partial<Opts> = {}): Opts {
   return {
@@ -241,23 +246,32 @@ describe("installCat — commands", () => {
     rmSync(tmpDir, { recursive: true, force: true });
   });
 
-  test("installs commands under commands/village/ subdirectory", async () => {
+  test("installs commands as colon-namespaced commands/village:<name>.md files", async () => {
     const opts = makeInstallOpts(tmpDir);
     const count = await installCat("commands", [], opts);
 
     expect(count).toBeGreaterThan(0);
 
     for (const name of VILLAGE_COMMANDS) {
-      const filePath = join(tmpDir, "commands", "village", name);
+      const filePath = join(tmpDir, "commands", name);
       expect(existsSync(filePath)).toBe(true);
     }
   });
 
-  test("does NOT install village commands at flat commands/ level", async () => {
+  test("does NOT create a commands/village/ subdirectory", async () => {
     const opts = makeInstallOpts(tmpDir);
     await installCat("commands", [], opts);
 
-    for (const name of VILLAGE_COMMANDS) {
+    const villageDirPath = join(tmpDir, "commands", "village");
+    expect(existsSync(villageDirPath)).toBe(false);
+  });
+
+  test("does NOT install village commands at flat commands/<name>.md level", async () => {
+    const opts = makeInstallOpts(tmpDir);
+    await installCat("commands", [], opts);
+
+    const BARE_NAMES = ["work.md", "board.md", "envoy.md", "orphans.md"];
+    for (const name of BARE_NAMES) {
       const flatPath = join(tmpDir, "commands", name);
       expect(existsSync(flatPath)).toBe(false);
     }
@@ -268,7 +282,7 @@ describe("installCat — commands", () => {
     await installCat("commands", [], opts);
 
     for (const name of VILLAGE_COMMANDS) {
-      const filePath = join(tmpDir, "commands", "village", name);
+      const filePath = join(tmpDir, "commands", name);
       const content = readFileSync(filePath, "utf-8");
       expect(content.length).toBeGreaterThan(0);
     }
