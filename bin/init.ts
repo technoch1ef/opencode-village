@@ -26,8 +26,8 @@ const ASSETS = resolve(SELF, "..", "..", "assets");
 const PLUGIN = "@technoch1ef/opencode-village";
 const BEADS_RUST_PLUGIN = "@technoch1ef/opencode-beads-rust";
 const BEADS_LEGACY_PLUGIN = "@technoch1ef/opencode-beads";
-const CATEGORIES = ["agents", "commands", "skills"] as const;
-type Category = (typeof CATEGORIES)[number];
+export const CATEGORIES = ["agents", "commands", "skills"] as const;
+export type Category = (typeof CATEGORIES)[number];
 
 // ── IO helpers ─────────────────────────────────────────────────────────
 
@@ -82,7 +82,7 @@ function listAssets(cat: Category): string[] {
 
 // ── Arg parsing ────────────────────────────────────────────────────────
 
-interface Opts {
+export interface Opts {
   all: boolean;
   agents: string[];
   commands: string[];
@@ -179,7 +179,7 @@ async function place(
   return true;
 }
 
-async function installCat(
+export async function installCat(
   cat: Category, names: string[], o: Opts,
 ): Promise<number> {
   const avail = listAssets(cat);

@@ -1,9 +1,12 @@
 /**
- * Tests for the patchConfig function in bin/init.ts.
+ * Tests for the installer logic in bin/init.ts.
  *
- * Verifies that both @technoch1ef/opencode-village and
- * @technoch1ef/opencode-beads-rust are correctly registered in opencode.json
- * under various conditions.
+ * - patchConfig: verifies that both @technoch1ef/opencode-village and
+ *   @technoch1ef/opencode-beads-rust are correctly registered in opencode.json
+ *   under various conditions.
+ *
+ * - installCat (commands): verifies that command assets are installed under
+ *   commands/village/ (namespaced), not at the flat commands/ level.
  */
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import {
@@ -17,7 +20,7 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { patchConfig, type PatchConfigOpts } from "../bin/init";
+import { patchConfig, installCat, type PatchConfigOpts, type Opts } from "../bin/init";
 
 const PLUGIN = "@technoch1ef/opencode-village";
 const BEADS_RUST_PLUGIN = "@technoch1ef/opencode-beads-rust";
@@ -205,5 +208,69 @@ describe("patchConfig", () => {
     const plugins = readPlugins(nestedDir);
     expect(plugins).toContain(PLUGIN);
     expect(plugins).toContain(BEADS_RUST_PLUGIN);
+  });
+});
+
+// ── installCat: commands layout ─────────────────────────────────────────
+
+/** Village command file basenames that should be installed. */
+const VILLAGE_COMMANDS = ["work.md", "board.md", "envoy.md", "orphans.md"];
+
+function makeInstallOpts(prefix: string, overrides: Partial<Opts> = {}): Opts {
+  return {
+    all: true,
+    agents: [],
+    commands: [],
+    skills: [],
+    dryRun: false,
+    force: true,
+    prefix,
+    symlink: false,
+    ...overrides,
+  };
+}
+
+describe("installCat — commands", () => {
+  let tmpDir: string;
+
+  beforeEach(() => {
+    tmpDir = mkdtempSync(join(tmpdir(), "install-cmd-test-"));
+  });
+
+  afterEach(() => {
+    rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  test("installs commands under commands/village/ subdirectory", async () => {
+    const opts = makeInstallOpts(tmpDir);
+    const count = await installCat("commands", [], opts);
+
+    expect(count).toBeGreaterThan(0);
+
+    for (const name of VILLAGE_COMMANDS) {
+      const filePath = join(tmpDir, "commands", "village", name);
+      expect(existsSync(filePath)).toBe(true);
+    }
+  });
+
+  test("does NOT install village commands at flat commands/ level", async () => {
+    const opts = makeInstallOpts(tmpDir);
+    await installCat("commands", [], opts);
+
+    for (const name of VILLAGE_COMMANDS) {
+      const flatPath = join(tmpDir, "commands", name);
+      expect(existsSync(flatPath)).toBe(false);
+    }
+  });
+
+  test("installed command files are non-empty and readable", async () => {
+    const opts = makeInstallOpts(tmpDir);
+    await installCat("commands", [], opts);
+
+    for (const name of VILLAGE_COMMANDS) {
+      const filePath = join(tmpDir, "commands", "village", name);
+      const content = readFileSync(filePath, "utf-8");
+      expect(content.length).toBeGreaterThan(0);
+    }
   });
 });
