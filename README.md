@@ -1,1 +1,90 @@
 # @technoch1ef/opencode-village
+
+Role-driven "Agentic Village" workflow for [OpenCode](https://opencode.ai) — agents claim, implement, review, and verify work through a structured handoff chain backed by [Beads](https://github.com/Dicklesworthstone/beads_rust) for AI-native issue tracking.
+
+## Requirements
+
+- [`br` binary](https://github.com/Dicklesworthstone/beads_rust) on `PATH` (Beads CLI)
+- [`@technoch1ef/opencode-beads-rust`](https://www.npmjs.com/package/@technoch1ef/opencode-beads-rust) plugin installed in OpenCode
+- Node >= 20
+
+## Install
+
+```bash
+npm i -D @technoch1ef/opencode-village @technoch1ef/opencode-beads-rust
+npx @technoch1ef/opencode-village init --all
+# Restart OpenCode
+```
+
+## Roles
+
+| Role | Responsibility |
+|------|---------------|
+| **mayor** | Research, plan, create epics and child beads with `village_scaffold` |
+| **worker** | Implement bead tasks, make local commits, hand off to inspector |
+| **inspector** | Read-only judgment: AC coverage, scope check, regression sniff |
+| **guard** | Run tests/linters/build, close beads on green or return to worker |
+| **envoy** | Push, create PRs, handle releases (optional terminal step) |
+
+**Handoff chain:** mayor &rarr; worker &rarr; inspector &rarr; guard &rarr; envoy (optional)
+
+## Commands
+
+| Command | Description |
+|---------|-------------|
+| `/village:work` | Trigger the work loop for the current agent's role |
+| `/village:board` | Show a read-only at-a-glance view of village state |
+| `/village:orphans` | Report and optionally fix unassigned beads |
+
+## Tools
+
+| Tool | Description |
+|------|-------------|
+| `village_claim` | Deterministically claim the next ready bead (single in_progress guard) |
+| `village_handoff` | Atomically hand off a bead to another role with a standardized comment |
+| `village_scaffold` | Create an epic + child beads with auto-detected skills and lint validation |
+| `village_lint` | Validate an existing bead body for required sections and content |
+| `village_board` | Read-only ASCII board showing village state (roles × statuses) |
+| `village_detect_stack` | Auto-detect project stack (TypeScript, Solana, Rails) from filesystem signals |
+| `village_ensure_branch` | Create or checkout an `epic/*` branch, fast-forward from base |
+| `village_invoke` | Dispatch a bead to a specialist (e.g. envoy) for processing |
+| `village_orphans` | Report orphan/suspect-assignee beads with optional auto-fix |
+| `village_status` | List village sessions under the current root session |
+| `village_worktrees` | List the current worktree-to-bead mapping for all in-progress beads |
+
+## Stack auto-detection
+
+`village_scaffold` and `village_detect_stack` automatically detect project stacks:
+
+| Signal | Skill |
+|--------|-------|
+| `package.json` | `stack-typescript` |
+| `Anchor.toml` or `programs/*/Cargo.toml` | `stack-solana` |
+| `Gemfile` containing `rails` | `stack-ruby-on-rails` |
+
+Detection walks up to the repo root (`.git`) and scans `packages/*` for monorepo support.
+
+## Customization
+
+### Private skills
+
+Store per-project skills in `~/.config/opencode/skills-private/<name>/SKILL.md`. These are gitignored and loaded alongside public skills.
+
+### Agent overrides
+
+Agents are installed to `~/.config/opencode/agents/`. Edit any agent's markdown file to customize tools, permissions, or workflow instructions. Re-running `init` will prompt before overwriting.
+
+## Smoke test
+
+1. Install and initialize:
+   ```bash
+   npm i -D @technoch1ef/opencode-village @technoch1ef/opencode-beads-rust
+   npx @technoch1ef/opencode-village init --all
+   ```
+2. Start OpenCode and verify the mayor agent loads as the default agent.
+3. Open a worker session and run `/village:work` to confirm the work loop starts.
+4. In a separate terminal, run `br ready` to verify Beads is on `PATH` and detecting the repo.
+
+## License
+
+MIT — see [LICENSE](./LICENSE)
