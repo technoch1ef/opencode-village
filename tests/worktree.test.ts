@@ -1,4 +1,4 @@
-import { describe, expect, mock, test } from "bun:test";
+import { afterAll, describe, expect, mock, test } from "bun:test";
 
 import {
   WORKTREE_PREFIX,
@@ -105,6 +105,10 @@ mock.module("../src/lib/br", () => ({
   formatIssueLine: (issue: any) =>
     `${issue.id} | ${issue.title ?? ""} | ${issue.status ?? ""}`,
 }));
+
+// Restore module mocks after all worktree tests so sibling test files
+// (e.g. br.test.ts) see the real implementation, not this stub.
+afterAll(() => mock.restore());
 
 // Re-import the module under test so it picks up the mocked br.
 const worktree = await import("../src/lib/worktree");
