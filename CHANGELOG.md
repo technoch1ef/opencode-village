@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.2
+
+### Fixed
+
+- **Use literal-colon filenames `commands/village:NAME.md`**. 0.1.1 used a subdirectory (`commands/village/NAME.md`) which OpenCode resolved as a path (`/village/NAME`) rather than a namespace (`/village:NAME`). Commands are now installed as `commands/village:work.md`, `commands/village:board.md`, `commands/village:envoy.md`, and `commands/village:orphans.md`.
+
+### Upgrade note
+
+Re-run `npx @technoch1ef/opencode-village@latest init --all --force` to replace the stale subdirectory layout from 0.1.1. Alternatively, delete `commands/village/` and re-run `init --all`.
+
 ## 0.1.1
 
 ### Fixed
