@@ -10,11 +10,33 @@
  */
 
 import { realpath } from "node:fs/promises";
-import { execBrJson, execFileText } from "./br";
+import {
+  execBrJson as execBrJsonImpl,
+  execFileText as execFileTextImpl,
+} from "./br";
 import type { BrIssue } from "./shared";
 
 /** Machine-parseable prefix for worktree comments. */
 export const WORKTREE_PREFIX = "[village] worktree: ";
+
+/**
+ * Injectable I/O dependencies for worktree functions.
+ *
+ * All fields are optional — omit any field to use the real `br` implementation.
+ * Pass mocks in tests to avoid `mock.module()` and the Bun module-cache
+ * pollution it causes.
+ */
+export type WorktreeDeps = {
+  execBrJson?: <T>(
+    args: string[],
+    options: { cwd?: string; actor?: string },
+  ) => Promise<T>;
+  execFileText?: (
+    file: string,
+    args: string[],
+    options: { cwd?: string; env?: Record<string, string | undefined> },
+  ) => Promise<{ stdout: string; stderr: string }>;
+};
 
 /**
  * Format a worktree comment for a bead.
@@ -77,10 +99,14 @@ export type WorktreeConflict = {
 export async function getWorktreeFromBead(
   beadId: string,
   options: { cwd?: string; actor?: string },
+  deps: WorktreeDeps = {},
 ): Promise<string | null> {
+  const _execBrJson = deps.execBrJson ?? execBrJsonImpl;
+  const _execFileText = deps.execFileText ?? execFileTextImpl;
+
   try {
     // Try JSON first
-    const comments = await execBrJson<
+    const comments = await _execBrJson<
       Array<{ text?: string; body?: string; content?: string }>
     >(["comments", "list", beadId, "--json"], options);
 
@@ -99,7 +125,7 @@ export async function getWorktreeFromBead(
         ...(options.actor ? { BD_ACTOR: options.actor } : {}),
       } as Record<string, string | undefined>;
 
-      const { stdout } = await execFileText(
+      const { stdout } = await _execFileText(
         "br",
         ["comments", "list", beadId],
         { cwd: options.cwd, env },
@@ -131,7 +157,7 @@ export async function postWorktreeComment(
     ...(options.actor ? { BD_ACTOR: options.actor } : {}),
   } as Record<string, string | undefined>;
 
-  await execFileText("br", ["comments", "add", beadId, comment], {
+  await execFileTextImpl("br", ["comments", "add", beadId, comment], {
     cwd: options.cwd,
     env,
   });
@@ -147,11 +173,14 @@ export async function checkWorktreeConflict(
   worktreePath: string,
   assignee: string,
   options: { cwd?: string; actor?: string },
+  deps: WorktreeDeps = {},
 ): Promise<WorktreeConflict | null> {
+  const _execBrJson = deps.execBrJson ?? execBrJsonImpl;
+
   // Get ALL in-progress beads (not filtered by assignee).
   let allInProgress: BrIssue[];
   try {
-    allInProgress = await execBrJson<BrIssue[]>(
+    allInProgress = await _execBrJson<BrIssue[]>(
       ["list", "--status", "in_progress", "--json"],
       options,
     );
@@ -168,7 +197,7 @@ export async function checkWorktreeConflict(
     if (beadAssignee === assignee) continue;
     if (!beadAssignee) continue;
 
-    const beadWorktree = await getWorktreeFromBead(bead.id, options);
+    const beadWorktree = await getWorktreeFromBead(bead.id, options, deps);
     if (!beadWorktree) continue;
 
     if (beadWorktree === worktreePath) {
@@ -186,13 +215,18 @@ export async function checkWorktreeConflict(
 /**
  * Build the current worktree → bead mapping from all in-progress beads.
  */
-export async function getWorktreeMapping(options: {
-  cwd?: string;
-  actor?: string;
-}): Promise<WorktreeEntry[]> {
+export async function getWorktreeMapping(
+  options: {
+    cwd?: string;
+    actor?: string;
+  },
+  deps: WorktreeDeps = {},
+): Promise<WorktreeEntry[]> {
+  const _execBrJson = deps.execBrJson ?? execBrJsonImpl;
+
   let allInProgress: BrIssue[];
   try {
-    allInProgress = await execBrJson<BrIssue[]>(
+    allInProgress = await _execBrJson<BrIssue[]>(
       ["list", "--status", "in_progress", "--json"],
       options,
     );
@@ -204,7 +238,7 @@ export async function getWorktreeMapping(options: {
 
   const entries: WorktreeEntry[] = [];
   for (const bead of allInProgress) {
-    const worktreePath = await getWorktreeFromBead(bead.id, options);
+    const worktreePath = await getWorktreeFromBead(bead.id, options, deps);
     if (worktreePath) {
       entries.push({
         beadId: bead.id,

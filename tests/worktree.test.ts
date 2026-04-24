@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, mock, test } from "bun:test";
+import { beforeEach, describe, expect, mock, test } from "bun:test";
 
 import {
   WORKTREE_PREFIX,
@@ -89,46 +89,35 @@ describe("resolveWorktreePath", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Mocked I/O tests — checkWorktreeConflict, getWorktreeFromBead, etc.
+// Mocked I/O tests — dependency injection (no mock.module())
 //
-// IMPORTANT: mock.module() is called inside beforeAll (NOT at module-eval
-// time) so Bun does NOT register the stub while loading other test files.
-// Sibling files (e.g. br.test.ts) import the real br module when Bun
-// evaluates them; the stub only becomes active when these tests run.
-// afterAll(() => mock.restore()) cleans up before the next file's tests run.
+// mock.module() in Bun 1.3.9 cannot be undone by mock.restore() — it
+// permanently pollutes the module cache for the entire process.  Instead,
+// we pass I/O stubs directly via the optional `deps` parameter that each
+// worktree function accepts.  This keeps br.test.ts completely isolated.
 // ---------------------------------------------------------------------------
 
-// Mock functions declared here (plain stubs — no side effects at module eval).
 const mockExecBrJson = mock(() => Promise.resolve([] as any));
 const mockExecFileText = mock(() =>
   Promise.resolve({ stdout: "", stderr: "" }),
 );
+const mockDeps = { execBrJson: mockExecBrJson, execFileText: mockExecFileText };
 
-describe("mocked I/O (br stub)", () => {
-  // worktree is re-imported inside beforeAll so it picks up the mocked br.
-  let worktree!: typeof import("../src/lib/worktree");
-
-  beforeAll(async () => {
-    // Register the br stub DURING test execution (not at module load time).
-    mock.module("../src/lib/br", () => ({
-      execBrJson: mockExecBrJson,
-      execFileText: mockExecFileText,
-      formatIssueLine: (issue: any) =>
-        `${issue.id} | ${issue.title ?? ""} | ${issue.status ?? ""}`,
-    }));
-    // Re-import worktree now that the stub is active.
-    worktree = await import("../src/lib/worktree");
+describe("mocked I/O (dependency injection)", () => {
+  beforeEach(() => {
+    mockExecBrJson.mockReset();
+    mockExecFileText.mockReset();
+    // Safe defaults — most tests override with mockResolvedValueOnce.
+    mockExecBrJson.mockResolvedValue([] as any);
+    mockExecFileText.mockResolvedValue({ stdout: "", stderr: "" });
   });
-
-  // Restore the real br module after all mocked tests complete.
-  afterAll(() => mock.restore());
 
   describe("getWorktreeFromBead (mocked)", () => {
     test("extracts worktree path from JSON comment", async () => {
       mockExecBrJson.mockResolvedValueOnce([
         { text: "[village] worktree: /Users/me/project" },
       ]);
-      const result = await worktree.getWorktreeFromBead("bead-1", {});
+      const result = await getWorktreeFromBead("bead-1", {}, mockDeps);
       expect(result).toBe("/Users/me/project");
     });
 
@@ -136,13 +125,13 @@ describe("mocked I/O (br stub)", () => {
       mockExecBrJson.mockResolvedValueOnce([
         { text: "Implementation complete." },
       ]);
-      const result = await worktree.getWorktreeFromBead("bead-1", {});
+      const result = await getWorktreeFromBead("bead-1", {}, mockDeps);
       expect(result).toBeNull();
     });
 
     test("returns null when comments list is empty", async () => {
       mockExecBrJson.mockResolvedValueOnce([]);
-      const result = await worktree.getWorktreeFromBead("bead-1", {});
+      const result = await getWorktreeFromBead("bead-1", {}, mockDeps);
       expect(result).toBeNull();
     });
 
@@ -152,14 +141,14 @@ describe("mocked I/O (br stub)", () => {
         stdout: "some preamble\n[village] worktree: /Users/me/fallback\n",
         stderr: "",
       });
-      const result = await worktree.getWorktreeFromBead("bead-1", {});
+      const result = await getWorktreeFromBead("bead-1", {}, mockDeps);
       expect(result).toBe("/Users/me/fallback");
     });
 
     test("returns null when both JSON and text fail", async () => {
       mockExecBrJson.mockRejectedValueOnce(new Error("fail"));
       mockExecFileText.mockRejectedValueOnce(new Error("fail"));
-      const result = await worktree.getWorktreeFromBead("bead-1", {});
+      const result = await getWorktreeFromBead("bead-1", {}, mockDeps);
       expect(result).toBeNull();
     });
 
@@ -167,7 +156,7 @@ describe("mocked I/O (br stub)", () => {
       mockExecBrJson.mockResolvedValueOnce([
         { body: "[village] worktree: /from/body" },
       ]);
-      const result = await worktree.getWorktreeFromBead("bead-1", {});
+      const result = await getWorktreeFromBead("bead-1", {}, mockDeps);
       expect(result).toBe("/from/body");
     });
   });
@@ -175,24 +164,24 @@ describe("mocked I/O (br stub)", () => {
   describe("checkWorktreeConflict (mocked)", () => {
     test("returns null when no in-progress beads exist", async () => {
       mockExecBrJson.mockResolvedValueOnce([]);
-      const result = await worktree.checkWorktreeConflict(
+      const result = await checkWorktreeConflict(
         "/Users/me/project",
         "worker",
         {},
+        mockDeps,
       );
       expect(result).toBeNull();
     });
 
     test("allows same-assignee re-claim (no conflict)", async () => {
-      // in-progress bead from same assignee
       mockExecBrJson.mockResolvedValueOnce([
         { id: "b-1", assignee: "worker", title: "task", status: "in_progress" },
       ]);
-      // getWorktreeFromBead for b-1 (skipped because same assignee)
-      const result = await worktree.checkWorktreeConflict(
+      const result = await checkWorktreeConflict(
         "/Users/me/project",
         "worker",
         {},
+        mockDeps,
       );
       expect(result).toBeNull();
     });
@@ -207,10 +196,11 @@ describe("mocked I/O (br stub)", () => {
         { text: "[village] worktree: /Users/me/project" },
       ]);
 
-      const result = await worktree.checkWorktreeConflict(
+      const result = await checkWorktreeConflict(
         "/Users/me/project",
         "worker",
         {},
+        mockDeps,
       );
 
       expect(result).not.toBeNull();
@@ -228,10 +218,11 @@ describe("mocked I/O (br stub)", () => {
         { text: "[village] worktree: /Users/other/different-project" },
       ]);
 
-      const result = await worktree.checkWorktreeConflict(
+      const result = await checkWorktreeConflict(
         "/Users/me/project",
         "worker",
         {},
+        mockDeps,
       );
       expect(result).toBeNull();
     });
@@ -243,20 +234,22 @@ describe("mocked I/O (br stub)", () => {
       // No worktree comment on b-99
       mockExecBrJson.mockResolvedValueOnce([]);
 
-      const result = await worktree.checkWorktreeConflict(
+      const result = await checkWorktreeConflict(
         "/Users/me/project",
         "worker",
         {},
+        mockDeps,
       );
       expect(result).toBeNull();
     });
 
     test("returns null gracefully when br list fails", async () => {
       mockExecBrJson.mockRejectedValueOnce(new Error("br not found"));
-      const result = await worktree.checkWorktreeConflict(
+      const result = await checkWorktreeConflict(
         "/Users/me/project",
         "worker",
         {},
+        mockDeps,
       );
       expect(result).toBeNull();
     });
@@ -265,10 +258,11 @@ describe("mocked I/O (br stub)", () => {
       mockExecBrJson.mockResolvedValueOnce([
         { id: "b-empty", assignee: "", title: "no owner", status: "in_progress" },
       ]);
-      const result = await worktree.checkWorktreeConflict(
+      const result = await checkWorktreeConflict(
         "/Users/me/project",
         "worker",
         {},
+        mockDeps,
       );
       expect(result).toBeNull();
     });
@@ -277,7 +271,7 @@ describe("mocked I/O (br stub)", () => {
   describe("getWorktreeMapping (mocked)", () => {
     test("returns empty array when no in-progress beads", async () => {
       mockExecBrJson.mockResolvedValueOnce([]);
-      const entries = await worktree.getWorktreeMapping({});
+      const entries = await getWorktreeMapping({}, mockDeps);
       expect(entries).toEqual([]);
     });
 
@@ -295,7 +289,7 @@ describe("mocked I/O (br stub)", () => {
         { text: "[village] worktree: /Users/me/project-b" },
       ]);
 
-      const entries = await worktree.getWorktreeMapping({});
+      const entries = await getWorktreeMapping({}, mockDeps);
       expect(entries).toHaveLength(2);
       expect(entries[0]).toEqual({
         beadId: "b-1",
@@ -323,14 +317,14 @@ describe("mocked I/O (br stub)", () => {
       // b-2 has no worktree comment
       mockExecBrJson.mockResolvedValueOnce([]);
 
-      const entries = await worktree.getWorktreeMapping({});
+      const entries = await getWorktreeMapping({}, mockDeps);
       expect(entries).toHaveLength(1);
       expect(entries[0].beadId).toBe("b-1");
     });
 
     test("returns empty array when br list fails", async () => {
       mockExecBrJson.mockRejectedValueOnce(new Error("br not found"));
-      const entries = await worktree.getWorktreeMapping({});
+      const entries = await getWorktreeMapping({}, mockDeps);
       expect(entries).toEqual([]);
     });
   });
