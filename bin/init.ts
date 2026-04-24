@@ -22,7 +22,11 @@ import { fileURLToPath } from "node:url";
 // ── Constants ──────────────────────────────────────────────────────────
 
 const SELF = dirname(fileURLToPath(import.meta.url));
-const ASSETS = resolve(SELF, "..", "..", "assets");
+// From dist: dist/bin/init.js → ../.. → package root
+// From source: bin/init.ts   → ..    → package root
+const ASSETS = existsSync(resolve(SELF, "..", "assets"))
+  ? resolve(SELF, "..", "assets")
+  : resolve(SELF, "..", "..", "assets");
 const PLUGIN = "@technoch1ef/opencode-village";
 const BEADS_RUST_PLUGIN = "@technoch1ef/opencode-beads-rust";
 const BEADS_LEGACY_PLUGIN = "@technoch1ef/opencode-beads";
