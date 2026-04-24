@@ -11,7 +11,6 @@ describe("AGENT_TO_ACTOR", () => {
   test("maps known agent names", () => {
     expect(AGENT_TO_ACTOR["mayor"]).toBe("mayor");
     expect(AGENT_TO_ACTOR["worker"]).toBe("worker");
-    expect(AGENT_TO_ACTOR["overseer"]).toBe("overseer");
     expect(AGENT_TO_ACTOR["inspector"]).toBe("inspector");
     expect(AGENT_TO_ACTOR["guard"]).toBe("guard");
     expect(AGENT_TO_ACTOR["envoy"]).toBe("envoy");

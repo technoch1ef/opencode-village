@@ -18,7 +18,6 @@ describe("VILLAGE_ROLES", () => {
 
   test("does not contain unknown roles", () => {
     expect(VILLAGE_ROLES.has("admin")).toBe(false);
-    expect(VILLAGE_ROLES.has("overseer")).toBe(false);
     expect(VILLAGE_ROLES.has("")).toBe(false);
   });
 
@@ -114,12 +113,10 @@ describe("isHandoffAllowed", () => {
   // Unknown roles
   test("unknown source role returns false", () => {
     expect(isHandoffAllowed("admin", "worker")).toBe(false);
-    expect(isHandoffAllowed("overseer", "worker")).toBe(false);
   });
 
   test("unknown target role returns false", () => {
     expect(isHandoffAllowed("worker", "admin")).toBe(false);
-    expect(isHandoffAllowed("worker", "overseer")).toBe(false);
   });
 
   test("both unknown returns false", () => {

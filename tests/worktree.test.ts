@@ -187,9 +187,9 @@ describe("mocked I/O (dependency injection)", () => {
     });
 
     test("detects conflict with different assignee in same worktree", async () => {
-      // br list --status in_progress returns a bead from "overseer"
+      // br list --status in_progress returns a bead from "inspector"
       mockExecBrJson.mockResolvedValueOnce([
-        { id: "b-99", assignee: "overseer", title: "review", status: "in_progress" },
+        { id: "b-99", assignee: "inspector", title: "review", status: "in_progress" },
       ]);
       // getWorktreeFromBead for b-99 → JSON comments
       mockExecBrJson.mockResolvedValueOnce([
@@ -205,13 +205,13 @@ describe("mocked I/O (dependency injection)", () => {
 
       expect(result).not.toBeNull();
       expect(result!.beadId).toBe("b-99");
-      expect(result!.assignee).toBe("overseer");
+      expect(result!.assignee).toBe("inspector");
       expect(result!.worktreePath).toBe("/Users/me/project");
     });
 
     test("no conflict when different assignee is in different worktree", async () => {
       mockExecBrJson.mockResolvedValueOnce([
-        { id: "b-99", assignee: "overseer", title: "review", status: "in_progress" },
+        { id: "b-99", assignee: "inspector", title: "review", status: "in_progress" },
       ]);
       // b-99 is in a different worktree
       mockExecBrJson.mockResolvedValueOnce([
@@ -229,7 +229,7 @@ describe("mocked I/O (dependency injection)", () => {
 
     test("no conflict when in-progress bead has no worktree comment", async () => {
       mockExecBrJson.mockResolvedValueOnce([
-        { id: "b-99", assignee: "overseer", title: "old task", status: "in_progress" },
+        { id: "b-99", assignee: "inspector", title: "old task", status: "in_progress" },
       ]);
       // No worktree comment on b-99
       mockExecBrJson.mockResolvedValueOnce([]);
@@ -278,7 +278,7 @@ describe("mocked I/O (dependency injection)", () => {
     test("builds mapping from in-progress beads with worktree comments", async () => {
       mockExecBrJson.mockResolvedValueOnce([
         { id: "b-1", title: "task one", assignee: "worker", status: "in_progress" },
-        { id: "b-2", title: "review two", assignee: "overseer", status: "in_progress" },
+        { id: "b-2", title: "review two", assignee: "inspector", status: "in_progress" },
       ]);
       // Comments for b-1
       mockExecBrJson.mockResolvedValueOnce([
@@ -300,7 +300,7 @@ describe("mocked I/O (dependency injection)", () => {
       expect(entries[1]).toEqual({
         beadId: "b-2",
         beadTitle: "review two",
-        assignee: "overseer",
+        assignee: "inspector",
         worktreePath: "/Users/me/project-b",
       });
     });
@@ -308,7 +308,7 @@ describe("mocked I/O (dependency injection)", () => {
     test("skips beads without worktree comments", async () => {
       mockExecBrJson.mockResolvedValueOnce([
         { id: "b-1", title: "task", assignee: "worker", status: "in_progress" },
-        { id: "b-2", title: "old task", assignee: "overseer", status: "in_progress" },
+        { id: "b-2", title: "old task", assignee: "inspector", status: "in_progress" },
       ]);
       // b-1 has a worktree comment
       mockExecBrJson.mockResolvedValueOnce([

@@ -21,7 +21,6 @@ describe("isVillageSessionTitle", () => {
   test("rejects non-village titles", () => {
     expect(isVillageSessionTitle("some-other-session")).toBe(false);
     expect(isVillageSessionTitle("village-mayor-1")).toBe(false);
-    expect(isVillageSessionTitle("village-overseer")).toBe(false);
     expect(isVillageSessionTitle("")).toBe(false);
   });
 

@@ -153,7 +153,6 @@ describe("work loop prompt invariants", () => {
   test("worker prompt uses village_handoff instead of two-step", () => {
     expect(WORKER_WORK_LOOP_PROMPT).toContain("village_handoff");
     expect(WORKER_WORK_LOOP_PROMPT).not.toContain("br comments add");
-    expect(WORKER_WORK_LOOP_PROMPT).not.toContain("--assignee overseer");
     expect(WORKER_WORK_LOOP_PROMPT).not.toContain("--assignee inspector");
   });
 

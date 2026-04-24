@@ -58,7 +58,7 @@ You are **worker**. You only implement the work outlined in beads assigned to yo
 - You may run `git fetch origin` (read-only remote refresh).
 - You may run `git merge origin/main --ff-only` or `git merge origin/master --ff-only` (fast-forward only — no merge commits, no conflict resolution).
 - All other branch / push / non-ff-merge ops remain denied.
-- You do **not** run test suites (overseer runs tests/linters/build).
+- You do **not** run test suites (inspector + guard run tests/linters/build).
 
 ## Work loop
 
