@@ -11,6 +11,7 @@
 
 import type { Plugin } from "@opencode-ai/plugin";
 import { AGENT_TO_ACTOR } from "./lib/br";
+import { startBrPreflight, withBrPreflight } from "./lib/preflight";
 import { createSessionHelpers } from "./lib/sessions";
 import { fixShellSnippetNewlines } from "./lib/shared";
 import { createBoardTool } from "./tools/board";
@@ -99,6 +100,11 @@ function createEventHandler(helpers: ReturnType<typeof createSessionHelpers>) {
 const VillagePlugin: Plugin = async ({ client }) => {
   const helpers = createSessionHelpers(client);
 
+  // Fire-and-forget `br --version` preflight check.
+  // On failure, a single warning is written to stderr and all village_* tools
+  // will return a clear error instead of crashing with cryptic ENOENT messages.
+  void startBrPreflight();
+
   return {
     "shell.env": async (input, output) => {
       const agent = (input as any).agent;
@@ -113,17 +119,17 @@ const VillagePlugin: Plugin = async ({ client }) => {
     },
 
     tool: {
-      village_board: createBoardTool(helpers),
-      village_claim: createClaimTool(helpers),
-      village_detect_stack: createDetectStackTool(),
-      village_ensure_branch: createEnsureBranchTool(),
-      village_handoff: createHandoffTool(helpers),
-      village_invoke: createInvokeTool(helpers),
-      village_lint: createLintTool(helpers),
-      village_scaffold: createScaffoldTool(helpers),
-      village_orphans: createOrphansTool(helpers),
-      village_status: createStatusTool(helpers),
-      village_worktrees: createWorktreesTool(helpers),
+      village_board: withBrPreflight(createBoardTool(helpers)),
+      village_claim: withBrPreflight(createClaimTool(helpers)),
+      village_detect_stack: withBrPreflight(createDetectStackTool()),
+      village_ensure_branch: withBrPreflight(createEnsureBranchTool()),
+      village_handoff: withBrPreflight(createHandoffTool(helpers)),
+      village_invoke: withBrPreflight(createInvokeTool(helpers)),
+      village_lint: withBrPreflight(createLintTool(helpers)),
+      village_scaffold: withBrPreflight(createScaffoldTool(helpers)),
+      village_orphans: withBrPreflight(createOrphansTool(helpers)),
+      village_status: withBrPreflight(createStatusTool(helpers)),
+      village_worktrees: withBrPreflight(createWorktreesTool(helpers)),
     },
 
     event: createEventHandler(helpers),
