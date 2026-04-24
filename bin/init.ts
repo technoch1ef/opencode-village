@@ -4,7 +4,7 @@
  *
  * Copies (or symlinks) agents, commands, and skills from the package's
  * assets/ directory into the user's OpenCode config directory, and
- * registers the plugin in opencode.json.
+ * registers the plugin(s) in opencode.json.
  *
  * Usage:
  *   npx @technoch1ef/opencode-village init --all
@@ -24,6 +24,8 @@ import { fileURLToPath } from "node:url";
 const SELF = dirname(fileURLToPath(import.meta.url));
 const ASSETS = resolve(SELF, "..", "..", "assets");
 const PLUGIN = "@technoch1ef/opencode-village";
+const BEADS_RUST_PLUGIN = "@technoch1ef/opencode-beads-rust";
+const BEADS_LEGACY_PLUGIN = "@technoch1ef/opencode-beads";
 const CATEGORIES = ["agents", "commands", "skills"] as const;
 type Category = (typeof CATEGORIES)[number];
 
@@ -48,6 +50,19 @@ function ask(q: string): Promise<string> {
 async function confirm(q: string): Promise<boolean> {
   const a = await ask(`${q} [Y/n] `);
   return a === "" || /^y(es)?$/i.test(a);
+}
+
+/**
+ * Prompt with a default of "no". In non-interactive (non-TTY) environments
+ * the conservative default (false / no) is returned immediately.
+ */
+async function confirmNo(q: string): Promise<boolean> {
+  if (!process.stdin.isTTY) return false;
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  return new Promise<boolean>((res) => {
+    rl.question(`${q} [y/N] `, (a) => { rl.close(); res(/^y(es)?$/i.test(a.trim())); });
+    rl.once("close", () => res(false));
+  });
 }
 
 // ── FS helpers ─────────────────────────────────────────────────────────
@@ -76,6 +91,12 @@ interface Opts {
   force: boolean;
   prefix: string;
   symlink: boolean;
+}
+
+/** Minimal subset of Opts consumed by patchConfig (exported for tests). */
+export interface PatchConfigOpts {
+  dryRun: boolean;
+  force: boolean;
 }
 
 function defaultPrefix(): string {
@@ -182,7 +203,19 @@ async function installCat(
 
 // ── opencode.json update ───────────────────────────────────────────────
 
-function patchConfig(prefix: string, o: Opts): void {
+/**
+ * Ensures both `@technoch1ef/opencode-village` and
+ * `@technoch1ef/opencode-beads-rust` are registered in opencode.json.
+ *
+ * Conflict handling:
+ *   - If `opencode-beads` (legacy `bd` variant) is present and
+ *     `opencode-beads-rust` is absent, a warning is printed and the user
+ *     is asked whether to replace it (default: no, leave as-is).
+ *   - `--force` skips the prompt and replaces unconditionally.
+ *
+ * Returns `true` if opencode.json was actually written.
+ */
+export async function patchConfig(prefix: string, o: PatchConfigOpts): Promise<boolean> {
   const p = join(prefix, "opencode.json");
   let cfg: Record<string, unknown>;
 
@@ -191,29 +224,83 @@ function patchConfig(prefix: string, o: Opts): void {
       cfg = JSON.parse(readFileSync(p, "utf-8")) as Record<string, unknown>;
     } catch {
       warn("Could not parse opencode.json; skipping plugin registration");
-      return;
+      return false;
     }
   } else {
     cfg = { "$schema": "https://opencode.ai/config.json", plugin: [] };
   }
 
-  const arr = Array.isArray(cfg.plugin) ? (cfg.plugin as string[]) : [];
+  const arr = Array.isArray(cfg.plugin) ? [...(cfg.plugin as string[])] : [];
+  let changed = false;
+
+  // ── Register @technoch1ef/opencode-village ─────────────────────────
   if (arr.includes(PLUGIN)) {
-    log("\nopencode.json: plugin already registered");
-    return;
+    log("\nopencode.json: village plugin already registered");
+  } else if (o.dryRun) {
+    log(`\nopencode.json: would add "${PLUGIN}" to plugin array`);
+  } else {
+    arr.push(PLUGIN);
+    changed = true;
+    log(`\nopencode.json: added "${PLUGIN}" to plugin array`);
   }
 
-  arr.push(PLUGIN);
+  // ── Register @technoch1ef/opencode-beads-rust ──────────────────────
+  if (arr.includes(BEADS_RUST_PLUGIN)) {
+    log(`\nopencode.json: beads-rust plugin already registered`);
+  } else {
+    const hasLegacy = arr.includes(BEADS_LEGACY_PLUGIN);
+
+    if (hasLegacy && o.force) {
+      // --force: replace legacy without prompting
+      if (o.dryRun) {
+        log(`\nopencode.json: would replace "${BEADS_LEGACY_PLUGIN}" with "${BEADS_RUST_PLUGIN}" (--force)`);
+      } else {
+        const idx = arr.indexOf(BEADS_LEGACY_PLUGIN);
+        arr.splice(idx, 1, BEADS_RUST_PLUGIN);
+        changed = true;
+        log(`\nopencode.json: replaced "${BEADS_LEGACY_PLUGIN}" with "${BEADS_RUST_PLUGIN}" (--force)`);
+      }
+    } else if (hasLegacy) {
+      // Conflict: ask user (default no)
+      warn(`Conflict detected: "${BEADS_LEGACY_PLUGIN}" is already registered.`);
+      warn(`"${BEADS_RUST_PLUGIN}" (the new \`br\` CLI) conflicts with it.`);
+      warn(`Use --force to replace automatically, or edit opencode.json manually.`);
+
+      if (o.dryRun) {
+        log(`\nopencode.json: would skip "${BEADS_RUST_PLUGIN}" (conflict with "${BEADS_LEGACY_PLUGIN}"; re-run with --force to replace)`);
+      } else {
+        const replace = await confirmNo(
+          `  Replace "${BEADS_LEGACY_PLUGIN}" with "${BEADS_RUST_PLUGIN}"?`,
+        );
+        if (replace) {
+          const idx = arr.indexOf(BEADS_LEGACY_PLUGIN);
+          arr.splice(idx, 1, BEADS_RUST_PLUGIN);
+          changed = true;
+          log(`\nopencode.json: replaced "${BEADS_LEGACY_PLUGIN}" with "${BEADS_RUST_PLUGIN}"`);
+        } else {
+          log(`\nopencode.json: left "${BEADS_LEGACY_PLUGIN}" as-is (re-run with --force to replace)`);
+        }
+      }
+    } else {
+      // No conflict – just add
+      if (o.dryRun) {
+        log(`\nopencode.json: would add "${BEADS_RUST_PLUGIN}" to plugin array`);
+      } else {
+        arr.push(BEADS_RUST_PLUGIN);
+        changed = true;
+        log(`\nopencode.json: added "${BEADS_RUST_PLUGIN}" to plugin array`);
+      }
+    }
+  }
+
   cfg.plugin = arr;
 
-  if (o.dryRun) {
-    log(`\nopencode.json: would add "${PLUGIN}" to plugin array`);
-    return;
+  if (!o.dryRun && changed) {
+    mkdirSync(dirname(p), { recursive: true });
+    writeFileSync(p, JSON.stringify(cfg, null, 2) + "\n");
   }
 
-  mkdirSync(dirname(p), { recursive: true });
-  writeFileSync(p, JSON.stringify(cfg, null, 2) + "\n");
-  log(`\nopencode.json: added "${PLUGIN}" to plugin array`);
+  return changed;
 }
 
 // ── Main ───────────────────────────────────────────────────────────────
@@ -256,8 +343,21 @@ async function main(): Promise<void> {
     );
   }
 
-  patchConfig(opts.prefix, opts);
+  const changed = await patchConfig(opts.prefix, opts);
   log(`\nDone: ${total} asset(s) installed${opts.dryRun ? " (dry-run)" : ""}`);
+
+  if (!opts.dryRun && (total > 0 || changed)) {
+    log("\nNext steps:");
+    log("  1. Install the br CLI: https://github.com/Dicklesworthstone/beads_rust");
+    log("  2. Restart OpenCode");
+    log("  3. Run /village:work in a worker session");
+  }
 }
 
-main().catch((e) => die(e instanceof Error ? e.message : String(e), 2));
+// Run main only when this file is the entry point.
+// In Bun: import.meta.main is true when run directly, false when imported.
+// In Node.js: import.meta.main is undefined → treat as direct execution.
+const bunMain = (import.meta as unknown as Record<string, unknown>).main;
+if (bunMain === true || bunMain === undefined) {
+  main().catch((e) => die(e instanceof Error ? e.message : String(e), 2));
+}
