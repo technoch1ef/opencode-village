@@ -46,7 +46,7 @@ npx @technoch1ef/opencode-village init --all
 | `village_scaffold` | Create an epic + child beads with auto-detected skills and lint validation |
 | `village_lint` | Validate an existing bead body for required sections and content |
 | `village_board` | Read-only ASCII board showing village state (roles × statuses) |
-| `village_detect_stack` | Auto-detect project stack (TypeScript, Solana, Rails) from filesystem signals |
+| `village_detect_stack` | Auto-detect project stack (TypeScript, Rails) from filesystem signals |
 | `village_ensure_branch` | Create or checkout an `epic/*` branch, fast-forward from base |
 | `village_invoke` | Dispatch a bead to a specialist (e.g. envoy) for processing |
 | `village_orphans` | Report orphan/suspect-assignee beads with optional auto-fix |
@@ -60,7 +60,6 @@ npx @technoch1ef/opencode-village init --all
 | Signal | Skill |
 |--------|-------|
 | `package.json` | `stack-typescript` |
-| `Anchor.toml` or `programs/*/Cargo.toml` | `stack-solana` |
 | `Gemfile` containing `rails` | `stack-ruby-on-rails` |
 
 Detection walks up to the repo root (`.git`) and scans `packages/*` for monorepo support.
