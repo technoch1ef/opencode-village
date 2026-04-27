@@ -113,35 +113,6 @@ const checkTypescript: SignalChecker = async (dir) => {
   return null;
 };
 
-/** `Anchor.toml` → `stack-solana` */
-const checkSolanaAnchor: SignalChecker = async (dir) => {
-  if (await fileExists(join(dir, "Anchor.toml"))) {
-    return "stack-solana";
-  }
-  return null;
-};
-
-// `programs/*/Cargo.toml` → `stack-solana`
-const checkSolanaPrograms: SignalChecker = async (dir) => {
-  const programsDir = join(dir, "programs");
-  if (!(await dirExists(programsDir))) return null;
-
-  try {
-    const entries = await readdir(programsDir, { withFileTypes: true });
-    for (const entry of entries) {
-      if (
-        entry.isDirectory() &&
-        (await fileExists(join(programsDir, entry.name, "Cargo.toml")))
-      ) {
-        return "stack-solana";
-      }
-    }
-  } catch {
-    // Ignore
-  }
-  return null;
-};
-
 /** `Gemfile` containing `rails` → `stack-ruby-on-rails` */
 const checkRails: SignalChecker = async (dir) => {
   const gemfilePath = join(dir, "Gemfile");
@@ -170,8 +141,6 @@ const checkRails: SignalChecker = async (dir) => {
  */
 const SIGNAL_CHECKERS: SignalChecker[] = [
   checkTypescript,
-  checkSolanaAnchor,
-  checkSolanaPrograms,
   checkRails,
 ];
 
