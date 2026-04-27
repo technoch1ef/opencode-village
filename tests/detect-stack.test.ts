@@ -16,18 +16,6 @@ describe("detectStack", () => {
     expect(skills).toContain("stack-typescript");
   });
 
-  test("detects stack-solana from Anchor.toml", async () => {
-    const skills = await detectStack(resolve(FIXTURES, "solana-anchor"));
-    expect(skills).toContain("beads-workflow");
-    expect(skills).toContain("stack-solana");
-  });
-
-  test("detects stack-solana from programs/*/Cargo.toml", async () => {
-    const skills = await detectStack(resolve(FIXTURES, "solana-programs"));
-    expect(skills).toContain("beads-workflow");
-    expect(skills).toContain("stack-solana");
-  });
-
   test("detects stack-ruby-on-rails from Gemfile with rails", async () => {
     const skills = await detectStack(resolve(FIXTURES, "rails"));
     expect(skills).toContain("beads-workflow");
@@ -43,7 +31,7 @@ describe("detectStack", () => {
     const skills = await detectStack(resolve(FIXTURES, "multi-stack"));
     expect(skills).toContain("beads-workflow");
     expect(skills).toContain("stack-typescript");
-    expect(skills).toContain("stack-solana");
+    expect(skills).toContain("stack-ruby-on-rails");
   });
 
   test("always has beads-workflow as first element", async () => {
@@ -99,17 +87,17 @@ describe("mergeSkills", () => {
   test("deduplicates and sorts", () => {
     const result = mergeSkills(
       ["stack-typescript", "beads-workflow"],
-      ["beads-workflow", "stack-solana", "stack-typescript"],
+      ["beads-workflow", "stack-ruby-on-rails", "stack-typescript"],
     );
     expect(result).toEqual([
       "beads-workflow",
-      "stack-solana",
+      "stack-ruby-on-rails",
       "stack-typescript",
     ]);
   });
 
   test("always starts with beads-workflow", () => {
-    const result = mergeSkills(["stack-typescript"], ["stack-solana"]);
+    const result = mergeSkills(["stack-typescript"], ["stack-ruby-on-rails"]);
     expect(result[0]).toBe("beads-workflow");
   });
 
@@ -195,11 +183,11 @@ describe("injectSkillsIntoBody", () => {
 
     const result = injectSkillsIntoBody(body, [
       "beads-workflow",
-      "stack-solana",
+      "stack-ruby-on-rails",
     ]);
     expect(result).toContain("## Skills");
     expect(result).toContain("- beads-workflow");
-    expect(result).toContain("- stack-solana");
+    expect(result).toContain("- stack-ruby-on-rails");
   });
 
   test("preserves other sections when replacing", () => {
