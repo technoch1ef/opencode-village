@@ -37,7 +37,6 @@ permission:
     "git rebase*": deny
     "git reset*": deny
     "gh *": deny
-    "anchor test*": deny
     "cargo test*": deny
     "npm test*": deny
     "pnpm test*": deny

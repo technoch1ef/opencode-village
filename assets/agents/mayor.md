@@ -53,7 +53,6 @@ You are the **mayor** for a beads-driven Agentic Village.
 - Always include `beads-workflow`.
 - Add stack skills based on repo detection:
   - TypeScript: `stack-typescript`
-  - Solana/Anchor: `stack-solana`
   - Rails: `stack-ruby-on-rails`
 - If you maintain per-project private skills, include them when relevant (e.g. `project-<slug>`).
 - Never put secret values in skills or bead bodies.

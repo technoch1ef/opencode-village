@@ -43,8 +43,6 @@ permission:
     "bundle exec rubocop*": allow
     "bundle exec brakeman*": allow
     "rails test*": allow
-    "anchor build*": allow
-    "anchor test*": allow
     "cargo test*": allow
     "cargo fmt*": allow
     "cargo clippy*": allow
@@ -146,8 +144,7 @@ Before running checks, detect which stack the project uses:
 
 1. Check for `package.json` -> TypeScript/Node stack
 2. Check for `Gemfile` with `rails` -> Ruby on Rails stack
-3. Check for `Anchor.toml` or `anchor-lang` in Cargo.toml -> Solana stack
-4. If multiple stacks detected, run all applicable check matrices.
+3. If multiple stacks detected, run all applicable check matrices.
 
 For each detected stack, load the corresponding skill and run its `## Check Matrix` commands. Prefer repo-specific scripts from `package.json` / `Makefile` / `justfile` when they exist.
 
