@@ -74,6 +74,18 @@ Store per-project skills in `~/.config/opencode/skills-private/<name>/SKILL.md`.
 
 Agents are installed to `~/.config/opencode/agents/`. Edit any agent's markdown file to customize tools, permissions, or workflow instructions. Re-running `init` will prompt before overwriting.
 
+## Upgrade
+
+To upgrade to the latest version:
+
+```bash
+npm i -D @technoch1ef/opencode-village@latest
+npx @technoch1ef/opencode-village init --all --force
+# Restart OpenCode
+```
+
+The `--force` flag overwrites existing agent prompts, commands, and skills with the latest versions. Your private skills in `skills-private/` are never touched.
+
 ## Smoke test
 
 1. Install and initialize:
