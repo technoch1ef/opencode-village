@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.3
+
+### Removed
+
+- **Solana stack support**: removed `stack-solana` skill asset, Solana/Anchor detection logic from `src/detect/stack.ts`, Anchor-related bash permissions from agent prompts, Solana test fixtures and test cases, and all Solana references from documentation.
+
+### Upgrade note
+
+Re-run `npx @technoch1ef/opencode-village@latest init --all --force` to update agent prompts and remove the stale `stack-solana` skill.
+
 ## 0.1.2
 
 ### Fixed
