@@ -10,7 +10,7 @@ This plugin defines a 5-role village workflow for OpenCode:
 Key pieces
 
 - Agents: `agents/{mayor,worker,inspector,guard,envoy}.md`
-- Tools: `village_claim`, `village_handoff`, `village_scaffold`, `village_lint`, `village_board`, `village_detect_stack`, `village_ensure_branch`, `village_invoke`, `village_orphans`, `village_status`, `village_worktrees`
+- Tools: `village_claim`, `village_handoff`, `village_scaffold`, `village_lint`, `village_board`, `village_ensure_branch`, `village_invoke`, `village_orphans`, `village_status`, `village_worktrees`
 - Public skills: `skills/*/SKILL.md`
 - Private skills (local-only): `skills-private/*/SKILL.md` (gitignored)
 
