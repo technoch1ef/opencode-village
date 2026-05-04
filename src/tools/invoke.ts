@@ -15,6 +15,7 @@ import { tool } from "@opencode-ai/plugin";
 import { execBrJson, execFileText, formatIssueLine } from "../lib/br";
 import type { SessionHelpers } from "../lib/sessions";
 import type { BrIssue } from "../lib/shared";
+import { inferRoleFromTitle, VILLAGE_ROLES } from "./handoff";
 
 /** Valid specialist roles that can be invoked. */
 export const SPECIALISTS = new Set(["envoy"] as const);
@@ -89,10 +90,37 @@ export function createInvokeTool(helpers: SessionHelpers) {
     async execute(args, context) {
       const directory = context.directory;
 
-      // Resolve the current actor from the session agent.
+      // Resolve the current actor via fallback chain (same as village_handoff):
+      //   1. Primary: session.agent
+      //   2. Fallback 1: infer role from session.title pattern
+      //   3. Fallback 2: walk to session.parentID and read its .agent
       const session = await helpers.getSession(context.sessionID);
       const sessionAgent = (session as any)?.agent as string | undefined;
-      const actor = sessionAgent ?? "unknown";
+
+      let actor: string = sessionAgent ?? "unknown";
+
+      // Fallback 1: infer from session title.
+      if (!VILLAGE_ROLES.has(actor)) {
+        const title = (session as any)?.title as string | undefined;
+        const inferred = inferRoleFromTitle(title);
+        if (inferred) actor = inferred;
+      }
+
+      // Fallback 2: walk to parentID and read its agent.
+      if (!VILLAGE_ROLES.has(actor)) {
+        try {
+          const parentID = (session as any)?.parentID as string | undefined;
+          if (parentID) {
+            const parent = await helpers.getSession(parentID);
+            const parentAgent = (parent as any)?.agent as string | undefined;
+            if (parentAgent && VILLAGE_ROLES.has(parentAgent)) {
+              actor = parentAgent;
+            }
+          }
+        } catch {
+          // Best-effort: network call to parent session may fail.
+        }
+      }
 
       if (!SPECIALISTS.has(args.specialist as Specialist)) {
         throw new Error(
