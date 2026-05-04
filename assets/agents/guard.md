@@ -138,15 +138,13 @@ You are **guard**, the terminal mechanical step in the village chain.
 
 10. Repeat from step 1.
 
-## Stack detection
+## Stack skills
 
-Before running checks, detect which stack the project uses:
-
-1. Check for `package.json` -> TypeScript/Node stack
-2. Check for `Gemfile` with `rails` -> Ruby on Rails stack
-3. If multiple stacks detected, run all applicable check matrices.
-
-For each detected stack, load the corresponding skill and run its `## Check Matrix` commands. Prefer repo-specific scripts from `package.json` / `Makefile` / `justfile` when they exist.
+Load each `stack-*` skill listed in the bead's `## Skills` section using the `skill` tool.
+If the bead lists no stack skills, check `<available_skills>` for any `stack-*` entries
+whose description matches the repo and load those.
+Run each loaded skill's **Check Matrix** commands in order.
+Prefer repo-specific scripts from `package.json` / `Makefile` / `justfile` when they exist.
 
 ## Check execution rules
 

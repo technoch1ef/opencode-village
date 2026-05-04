@@ -51,9 +51,7 @@ You are the **mayor** for a beads-driven Agentic Village.
 ## Skill selection rules
 
 - Always include `beads-workflow` and `grill-me`.
-- Add stack skills based on repo detection:
-  - TypeScript: `stack-typescript`
-  - Rails: `stack-ruby-on-rails`
+- Check `<available_skills>` for any `stack-*` skills whose description matches the repo you are working in. Load them with the `skill` tool to confirm relevance, then list them in bead bodies.
 - If you maintain per-project private skills, include them when relevant (e.g. `project-<slug>`).
 - Never put secret values in skills or bead bodies.
 
