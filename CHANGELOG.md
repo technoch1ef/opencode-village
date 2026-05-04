@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.3.0
+
+### Removed
+
+- **`village_detect_stack` tool**: stack detection is no longer built into the plugin. Stack skills are now discovered natively by OpenCode via `<available_skills>`.
+- **`src/detect/stack.ts` module**: filesystem signal checkers for TypeScript and Rails removed.
+
+### Changed
+
+- **`village_scaffold`** no longer auto-injects stack skills. The mayor specifies them explicitly when creating beads.
+- **Agent prompts** now reference `<available_skills>` for dynamic stack discovery instead of hardcoded detection logic.
+
+### Upgrade note
+
+Re-run `npx @technoch1ef/opencode-village@latest init --all --force` to update agent prompts. Install stack skills (e.g. `stack-typescript`) into your skills directory — agents will pick them up automatically.
+
 ## 0.1.3
 
 ### Removed

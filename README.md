@@ -46,23 +46,15 @@ npx @technoch1ef/opencode-village init --all
 | `village_scaffold` | Create an epic + child beads with auto-detected skills and lint validation |
 | `village_lint` | Validate an existing bead body for required sections and content |
 | `village_board` | Read-only ASCII board showing village state (roles × statuses) |
-| `village_detect_stack` | Auto-detect project stack (TypeScript, Rails) from filesystem signals |
 | `village_ensure_branch` | Create or checkout an `epic/*` branch, fast-forward from base |
 | `village_invoke` | Dispatch a bead to a specialist (e.g. envoy) for processing |
 | `village_orphans` | Report orphan/suspect-assignee beads with optional auto-fix |
 | `village_status` | List village sessions under the current root session |
 | `village_worktrees` | List the current worktree-to-bead mapping for all in-progress beads |
 
-## Stack auto-detection
+## Stack skills
 
-`village_scaffold` and `village_detect_stack` automatically detect project stacks:
-
-| Signal | Skill |
-|--------|-------|
-| `package.json` | `stack-typescript` |
-| `Gemfile` containing `rails` | `stack-ruby-on-rails` |
-
-Detection walks up to the repo root (`.git`) and scans `packages/*` for monorepo support.
+Stack skills (e.g. `stack-typescript`, `stack-ruby-on-rails`) are discovered natively by OpenCode via `<available_skills>`. Install any stack skill into your skills directory and agents will pick it up automatically — no plugin code changes needed.
 
 ## Customization
 
