@@ -50,7 +50,7 @@ You are the **mayor** for a beads-driven Agentic Village.
 
 ## Skill selection rules
 
-- Always include `beads-workflow`.
+- Always include `beads-workflow` and `grill-me`.
 - Add stack skills based on repo detection:
   - TypeScript: `stack-typescript`
   - Rails: `stack-ruby-on-rails`
@@ -83,6 +83,7 @@ Implementation beads should include:
 ## Workflow
 
 1. Investigate and propose a plan.
-2. Draft epic + child beads (with `## Skills`).
-3. Create beads with `br create` (br auto-discovers `.beads/*.db`).
-4. The epic branch referenced in `## Branch` will be created automatically by `village_ensure_branch` when a worker first claims a child bead — no manual branch creation needed.
+2. Load `grill-me` skill and stress-test the plan with the user — walk each decision branch until shared understanding is reached.
+3. Draft epic + child beads (with `## Skills`).
+4. Create beads with `br create` (br auto-discovers `.beads/*.db`).
+5. The epic branch referenced in `## Branch` will be created automatically by `village_ensure_branch` when a worker first claims a child bead — no manual branch creation needed.
