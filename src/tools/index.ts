@@ -4,7 +4,6 @@
 export { createBoardTool, formatAge, formatBoardEntry, renderBoard, buildBoardData } from "./board";
 export type { BoardData } from "./board";
 export { createClaimTool, parseBranchFromBody, selectFilteredReady } from "./claim";
-export { createDetectStackTool } from "./detect-stack";
 export { createEnsureBranchTool, ensureBranch, detectBaseBranch } from "./ensure-branch";
 export type { EnsureBranchResult } from "./ensure-branch";
 export { createHandoffTool, isHandoffAllowed, formatHandoffComment, HANDOFF_MATRIX, VILLAGE_ROLES } from "./handoff";
