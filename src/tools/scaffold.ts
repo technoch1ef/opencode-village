@@ -5,7 +5,6 @@
  */
 
 import { tool } from "@opencode-ai/plugin";
-import { detectStack, mergeSkills } from "../detect/stack";
 import { execBrJson, firstBrIssue } from "../lib/br";
 import {
   defaultSkillRegistryPaths,
@@ -14,6 +13,18 @@ import {
 } from "../lib/lint";
 import type { SessionHelpers } from "../lib/sessions";
 import type { BrIssue } from "../lib/shared";
+
+/**
+ * Ensure `beads-workflow` is the first skill and deduplicate the list.
+ *
+ * Replaces the old `mergeSkills(parseSkillsFromBody(...), detectedSkills)` pattern
+ * now that auto-detection has been removed.
+ */
+function ensureBeadsWorkflow(skills: string[]): string[] {
+  const set = new Set(skills.filter(Boolean));
+  set.delete("beads-workflow");
+  return ["beads-workflow", ...Array.from(set).sort()];
+}
 
 /**
  * Detect if a body string already contains structured markdown sections
@@ -175,18 +186,19 @@ export function createScaffoldTool(helpers: SessionHelpers) {
       const branch = args.branch.trim();
       if (!branch) throw new Error("branch is required");
 
-      // Auto-detect stack skills from the target directory.
-      const detectedSkills = await detectStack(directory);
+      // Default skills — auto-detection has been removed; rely on mayor-provided
+      // skills in structured bodies, falling back to just beads-workflow.
+      const defaultSkills = ["beads-workflow"];
 
       const epicDescription = isStructuredBody(args.epic_body)
         ? injectSkillsIntoBody(
             args.epic_body!.trim(),
-            mergeSkills(parseSkillsFromBody(args.epic_body!), detectedSkills),
+            ensureBeadsWorkflow(parseSkillsFromBody(args.epic_body!)),
           )
         : renderScaffoldDescription({
             context: args.epic_body,
             branch,
-            skills: detectedSkills,
+            skills: defaultSkills,
           });
 
       const children = args.children ?? [];
@@ -228,12 +240,12 @@ export function createScaffoldTool(helpers: SessionHelpers) {
         const childDescription = isStructuredBody(c.body)
           ? injectSkillsIntoBody(
               c.body!.trim(),
-              mergeSkills(parseSkillsFromBody(c.body!), detectedSkills),
+              ensureBeadsWorkflow(parseSkillsFromBody(c.body!)),
             )
           : renderScaffoldDescription({
               context: c.body,
               branch,
-              skills: detectedSkills,
+              skills: defaultSkills,
             });
         childDescriptions.push(childDescription);
 
