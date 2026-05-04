@@ -3,6 +3,7 @@ import { describe, expect, test } from "bun:test";
 import {
   isHandoffAllowed,
   formatHandoffComment,
+  inferRoleFromTitle,
   HANDOFF_MATRIX,
   VILLAGE_ROLES,
 } from "../src/tools/handoff";
@@ -145,6 +146,57 @@ describe("formatHandoffComment", () => {
   test("preserves note content verbatim", () => {
     const note = "Changes requested:\n- Fix lint errors\n- Add missing type";
     const result = formatHandoffComment("inspector", "worker", note);
-    expect(result).toBe(`[handoff inspector\u2192worker] ${note}`);
+    expect(result).toBe(`[handoff inspector→worker] ${note}`);
+  });
+});
+
+describe("inferRoleFromTitle", () => {
+  test('infers "worker" from title with bead suffix', () => {
+    expect(inferRoleFromTitle("village-worker-bd-2kk9.11")).toBe("worker");
+  });
+
+  test('infers "inspector" from exact title', () => {
+    expect(inferRoleFromTitle("village-inspector")).toBe("inspector");
+  });
+
+  test('infers "guard" from title with suffix', () => {
+    expect(inferRoleFromTitle("village-guard-check")).toBe("guard");
+  });
+
+  test("returns undefined for non-village title", () => {
+    expect(inferRoleFromTitle("random-session-title")).toBeUndefined();
+  });
+
+  test("returns undefined for undefined input", () => {
+    expect(inferRoleFromTitle(undefined)).toBeUndefined();
+  });
+
+  test("returns undefined for null input", () => {
+    expect(inferRoleFromTitle(null)).toBeUndefined();
+  });
+
+  test("returns undefined for empty string", () => {
+    expect(inferRoleFromTitle("")).toBeUndefined();
+  });
+
+  test('infers "mayor" from title with suffix', () => {
+    expect(inferRoleFromTitle("village-mayor-planning")).toBe("mayor");
+  });
+
+  test('infers "envoy" from exact title', () => {
+    expect(inferRoleFromTitle("village-envoy")).toBe("envoy");
+  });
+
+  test('infers "envoy" from title with suffix', () => {
+    expect(inferRoleFromTitle("village-envoy-release")).toBe("envoy");
+  });
+
+  test("does not match partial role names", () => {
+    // "village-work" should NOT match "worker" since it doesn't follow the pattern
+    expect(inferRoleFromTitle("village-work")).toBeUndefined();
+  });
+
+  test("does not match without village- prefix", () => {
+    expect(inferRoleFromTitle("worker-session")).toBeUndefined();
   });
 });

@@ -40,6 +40,33 @@ export const VILLAGE_ROLES: ReadonlySet<string> = new Set<VillageRole>([
 ]);
 
 /**
+ * Infer a village role from a session title.
+ *
+ * Session titles follow patterns like `village-worker-bd-2kk9.11`,
+ * `village-inspector`, `village-guard-check`, etc.
+ * (see {@link import("../lib/sessions").isVillageSessionTitle}).
+ *
+ * Iterates over {@link VILLAGE_ROLES} and returns the first match
+ * where the title starts with `village-<role>-` or equals `village-<role>`.
+ *
+ * @returns The matched role string, or `undefined` if no match.
+ */
+export function inferRoleFromTitle(
+  title: string | undefined | null,
+): string | undefined {
+  if (typeof title !== "string") return undefined;
+  for (const role of VILLAGE_ROLES) {
+    if (
+      title === `village-${role}` ||
+      title.startsWith(`village-${role}-`)
+    ) {
+      return role;
+    }
+  }
+  return undefined;
+}
+
+/**
  * Allowed handoff matrix.
  *
  * Key: source role. Value: set of target roles the source may hand off to.
@@ -106,10 +133,36 @@ export function createHandoffTool(helpers: SessionHelpers) {
     async execute(args, context) {
       const directory = context.directory;
 
-      // Resolve the current actor from the session agent.
+      // Resolve the current actor via fallback chain:
+      //   1. Primary: session.agent (existing behavior)
+      //   2. Fallback 1: infer role from session.title pattern
+      //   3. Fallback 2: walk to session.parentID and read its .agent
       const session = await helpers.getSession(context.sessionID);
       const sessionAgent = (session as any)?.agent as string | undefined;
-      const from = sessionAgent ?? undefined;
+
+      let from: string | undefined = sessionAgent ?? undefined;
+
+      // Fallback 1: infer from session title.
+      if (!from || !VILLAGE_ROLES.has(from)) {
+        const title = (session as any)?.title as string | undefined;
+        from = inferRoleFromTitle(title);
+      }
+
+      // Fallback 2: walk to parentID and read its agent.
+      if (!from || !VILLAGE_ROLES.has(from)) {
+        try {
+          const parentID = (session as any)?.parentID as string | undefined;
+          if (parentID) {
+            const parent = await helpers.getSession(parentID);
+            const parentAgent = (parent as any)?.agent as string | undefined;
+            if (parentAgent && VILLAGE_ROLES.has(parentAgent)) {
+              from = parentAgent;
+            }
+          }
+        } catch {
+          // Best-effort: network call to parent session may fail.
+        }
+      }
 
       if (!from || !VILLAGE_ROLES.has(from)) {
         throw new Error(
