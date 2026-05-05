@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- **Skill consolidation**: `beads-workflow`, `handoff`, and `grill-me` skills are gone. The new `village-workflow` skill subsumes the first two (workflow conventions + cross-repo handoff template). Mayor stress-testing previously delegated to `grill-me` is now inlined in `agents/mayor.md`.
+- **Tools-first language**: agent prompts, commands, and skills no longer reference the `br` CLI directly. All village operations go through `village_*` plugin tools; `br` remains the internal backing store invoked by the plugin.
+- **Bead bodies**: `## Skills` should now list `village-workflow` (was `beads-workflow`). `village_scaffold` injects the new name automatically.
+
+### Upgrade note
+
+Re-run `npx @technoch1ef/opencode-village@latest init --all --force` to install the new skill, refreshed agents, and updated commands.
+
 ## 0.4.0
 
 ### Changed

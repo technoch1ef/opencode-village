@@ -94,7 +94,7 @@ export function lintBeadBody(body: string, opts?: LintOptions): LintResult {
   } else {
     const skills = parseSkillList(skillsContent);
     if (skills.length === 0) {
-      errors.push("## Skills must list at least one skill (e.g. `- beads-workflow`)");
+      errors.push("## Skills must list at least one skill (e.g. `- village-workflow`)");
     } else if (knownSkills) {
       for (const skill of skills) {
         if (!knownSkills.has(skill)) {

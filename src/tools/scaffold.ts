@@ -15,15 +15,15 @@ import type { SessionHelpers } from "../lib/sessions";
 import type { BrIssue } from "../lib/shared";
 
 /**
- * Ensure `beads-workflow` is the first skill and deduplicate the list.
+ * Ensure `village-workflow` is the first skill and deduplicate the list.
  *
  * Replaces the old `mergeSkills(parseSkillsFromBody(...), detectedSkills)` pattern
  * now that auto-detection has been removed.
  */
-function ensureBeadsWorkflow(skills: string[]): string[] {
+function ensureVillageWorkflow(skills: string[]): string[] {
   const set = new Set(skills.filter(Boolean));
-  set.delete("beads-workflow");
-  return ["beads-workflow", ...Array.from(set).sort()];
+  set.delete("village-workflow");
+  return ["village-workflow", ...Array.from(set).sort()];
 }
 
 /**
@@ -187,13 +187,13 @@ export function createScaffoldTool(helpers: SessionHelpers) {
       if (!branch) throw new Error("branch is required");
 
       // Default skills — auto-detection has been removed; rely on mayor-provided
-      // skills in structured bodies, falling back to just beads-workflow.
-      const defaultSkills = ["beads-workflow"];
+      // skills in structured bodies, falling back to just village-workflow.
+      const defaultSkills = ["village-workflow"];
 
       const epicDescription = isStructuredBody(args.epic_body)
         ? injectSkillsIntoBody(
             args.epic_body!.trim(),
-            ensureBeadsWorkflow(parseSkillsFromBody(args.epic_body!)),
+            ensureVillageWorkflow(parseSkillsFromBody(args.epic_body!)),
           )
         : renderScaffoldDescription({
             context: args.epic_body,
@@ -240,7 +240,7 @@ export function createScaffoldTool(helpers: SessionHelpers) {
         const childDescription = isStructuredBody(c.body)
           ? injectSkillsIntoBody(
               c.body!.trim(),
-              ensureBeadsWorkflow(parseSkillsFromBody(c.body!)),
+              ensureVillageWorkflow(parseSkillsFromBody(c.body!)),
             )
           : renderScaffoldDescription({
               context: c.body,

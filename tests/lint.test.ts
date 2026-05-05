@@ -17,7 +17,7 @@ describe("lintBeadBody", () => {
     "",
     "## Skills",
     "",
-    "- beads-workflow",
+    "- village-workflow",
     "- stack-typescript",
     "",
     "## Branch",
@@ -83,7 +83,7 @@ describe("lintBeadBody", () => {
 
   test("fails when ## Skills has no entries", () => {
     const body = validBody
-      .replace("- beads-workflow\n- stack-typescript", "- (fill in)");
+      .replace("- village-workflow\n- stack-typescript", "- (fill in)");
     const result = lintBeadBody(body);
     expect(result.ok).toBe(false);
     expect(
@@ -92,7 +92,7 @@ describe("lintBeadBody", () => {
   });
 
   test("fails when skill is not in known skills registry", () => {
-    const knownSkills = new Set(["beads-workflow", "stack-typescript"]);
+    const knownSkills = new Set(["village-workflow", "stack-typescript"]);
     const body = validBody.replace(
       "- stack-typescript",
       "- stack-nonexistent",
@@ -108,7 +108,7 @@ describe("lintBeadBody", () => {
 
   test("passes when all skills are in known registry", () => {
     const knownSkills = new Set([
-      "beads-workflow",
+      "village-workflow",
       "stack-typescript",
     ]);
     const result = lintBeadBody(validBody, { knownSkills });
@@ -189,7 +189,7 @@ describe("lintBeadBody epic exemptions", () => {
     "",
     "## Skills",
     "",
-    "- beads-workflow",
+    "- village-workflow",
   ].join("\n");
 
   test("epic beads skip branch and acceptance criteria checks", () => {
@@ -199,7 +199,7 @@ describe("lintBeadBody epic exemptions", () => {
   });
 
   test("epic beads still require Context and Skills", () => {
-    const body = "## Skills\n\n- beads-workflow";
+    const body = "## Skills\n\n- village-workflow";
     const result = lintBeadBody(body, { isEpic: true });
     expect(result.ok).toBe(false);
     expect(result.errors.some((e) => e.includes("## Context"))).toBe(true);
@@ -235,8 +235,7 @@ describe("scanSkillRegistry", () => {
     // Use the repo's bundled assets/skills/ directory (always present in git)
     const configDir = resolve(import.meta.dir, "..");
     const skills = await scanSkillRegistry([resolve(configDir, "assets", "skills")]);
-    expect(skills.has("beads-workflow")).toBe(true);
-    expect(skills.has("grill-me")).toBe(true);
+    expect(skills.has("village-workflow")).toBe(true);
   });
 
   test("silently skips non-existent directories", async () => {
@@ -251,8 +250,7 @@ describe("scanSkillRegistry", () => {
       resolve(configDir, "skills"),
     ]);
     // Should have skills from bundled assets dir (skills/ may not exist in a fresh checkout)
-    expect(skills.has("beads-workflow")).toBe(true);
-    expect(skills.has("grill-me")).toBe(true);
+    expect(skills.has("village-workflow")).toBe(true);
   });
 });
 

@@ -11,7 +11,7 @@ describe("isStructuredBody", () => {
   });
 
   test("detects ## Skills header", () => {
-    expect(isStructuredBody("## Skills\n- beads-workflow")).toBe(true);
+    expect(isStructuredBody("## Skills\n- village-workflow")).toBe(true);
   });
 
   test("returns false for plain text", () => {
@@ -33,7 +33,7 @@ describe("renderScaffoldDescription", () => {
     const result = renderScaffoldDescription({
       context: "Build the widget",
       branch: "epic/widgets",
-      skills: ["beads-workflow", "stack-typescript"],
+      skills: ["village-workflow", "stack-typescript"],
       acceptance: "- [ ] Widget works",
       notes: "None",
     });
@@ -41,7 +41,7 @@ describe("renderScaffoldDescription", () => {
     expect(result).toContain("## Context");
     expect(result).toContain("Build the widget");
     expect(result).toContain("## Skills");
-    expect(result).toContain("- beads-workflow");
+    expect(result).toContain("- village-workflow");
     expect(result).toContain("- stack-typescript");
     expect(result).toContain("## Branch");
     expect(result).toContain("`epic/widgets`");
@@ -66,14 +66,14 @@ describe("renderScaffoldDescription", () => {
   test("filters out empty skill names", () => {
     const result = renderScaffoldDescription({
       branch: "epic/test",
-      skills: ["", "beads-workflow", ""],
+      skills: ["", "village-workflow", ""],
     });
 
-    expect(result).toContain("- beads-workflow");
+    expect(result).toContain("- village-workflow");
     // Should only have one skill bullet
     const skillLines = result
       .split("\n")
       .filter((l) => l.startsWith("- ") && !l.includes("[ ]"));
-    expect(skillLines).toEqual(["- beads-workflow"]);
+    expect(skillLines).toEqual(["- village-workflow"]);
   });
 });

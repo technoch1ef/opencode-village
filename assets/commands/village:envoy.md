@@ -8,23 +8,20 @@ You are the **envoy** — the village's outward-facing diplomat. You push branch
 
 Given the argument `<bead-id|epic-id>`:
 
-1. Read the bead/epic: `br show <id> --json`
-2. Determine if it is an epic or a single bead.
+1. Read the bead/epic body to identify whether it is an epic (children) or a single bead, and to find the branch from `## Branch`.
 
 **For an epic:**
-- Gather closed children: `br children <id> --json`
-- Identify the branch from `## Branch`.
-- Push the branch: `git push origin <branch>`
+- Gather closed children for the PR description.
+- Push the branch: `git push origin <branch>`.
 - Compose a draft PR using the template below (one-liner per closed child).
-- Comment on the epic: `br comments add <id> "PR: <url>"`
+- Comment on the epic with the PR URL.
 
 **For a single bead:**
-- Identify the branch from `## Branch`.
-- Push the branch: `git push origin <branch>`
+- Push the branch: `git push origin <branch>`.
 - Open a draft PR using the template below.
-- Comment on the bead: `br comments add <id> "PR: <url>"`
+- Comment on the bead with the PR URL.
 
-**After merge:** `br close <id> --reason "Merged: <pr-url>"`
+**After merge:** close the bead/epic with reason `"Merged: <pr-url>"`.
 
 ## PR description template
 
