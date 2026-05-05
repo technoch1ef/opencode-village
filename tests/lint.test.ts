@@ -236,7 +236,7 @@ describe("scanSkillRegistry", () => {
     const configDir = resolve(import.meta.dir, "..");
     const skills = await scanSkillRegistry([resolve(configDir, "assets", "skills")]);
     expect(skills.has("beads-workflow")).toBe(true);
-    expect(skills.has("stack-typescript")).toBe(true);
+    expect(skills.has("grill-me")).toBe(true);
   });
 
   test("silently skips non-existent directories", async () => {
@@ -252,7 +252,7 @@ describe("scanSkillRegistry", () => {
     ]);
     // Should have skills from bundled assets dir (skills/ may not exist in a fresh checkout)
     expect(skills.has("beads-workflow")).toBe(true);
-    expect(skills.has("stack-typescript")).toBe(true);
+    expect(skills.has("grill-me")).toBe(true);
   });
 });
 

@@ -125,8 +125,8 @@ Use this workflow:
    - If the branch does not exist and is not an \`epic/*\` branch, mark blocked and report.
 5. Implement only what the bead asks for (keep changes minimal)
 6. Commit locally (no push): \`git add -A && git commit -m "bead(<id>): <short description>"\`
-7. Hand off to inspector:
-   - Call \`village_handoff\` with \`{ bead: "<id>", to: "inspector", note: "Implementation complete. Ready for review." }\`
+7. Hand off to guard:
+   - Call \`village_handoff\` with \`{ bead: "<id>", to: "guard", note: "Implementation complete. Ready for CI checks." }\`
 8. Repeat from step 1.`;
 
 export const INSPECTOR_WORK_LOOP_PROMPT = `Claim the next bead assigned to inspector and start reviewing it.
@@ -143,9 +143,10 @@ Use this workflow:
    - AC coverage: parse \`- [ ]\` items, verify each is addressed by the diff
    - Diff scope: flag files changed outside expected scope
    - Regression sniff: deleted tests, \`TODO\`/\`console.log\`, \`any\` casts, hardcoded secrets
-   - Stack review: apply each \`stack-*\` skill's \`## Review Checklist\`
+   - Stack review: apply each \`stack-*\` skill's \`## Review Checklist\` (if loaded via \`<available_skills>\`)
 6. If judgment passes:
-   - Call \`village_handoff\` with \`{ bead: "<id>", to: "guard", note: "<structured summary>" }\`
+   - \`br close <id> --reason "Inspector approved: <structured summary>"\`
+   - Cascade epic close if all children are closed.
 7. If changes needed:
    - Call \`village_handoff\` with \`{ bead: "<id>", to: "worker", note: "<itemized findings>" }\`
 8. Repeat from step 1.`;
@@ -160,13 +161,7 @@ Use this workflow:
 2. Read the bead details: \`br show <id> --json\`
 3. Load skills listed under \`## Skills\` and run the appropriate checks (tests/linters/build)
 4. If all checks pass:
-   - \`br comments add <id> "Approved. Checks: <...>"\`
-   - \`br close <id> --reason "Approved"\`
-   - post-close parent epic check:
-     - \`PARENT_ID=$(br show <id> --json | jq -r '.[0].parent // empty')\`
-     - \`if [ -n "$PARENT_ID" ]; then br children "$PARENT_ID" --json; fi\`
-     - \`if [ -n "$PARENT_ID" ]; then OPEN_CHILD_COUNT=$(br children "$PARENT_ID" --json | jq '[.[] | select(.status != "closed")] | length'); fi\`
-     - \`if [ -n "$PARENT_ID" ] && [ "$OPEN_CHILD_COUNT" -eq 0 ]; then br close "$PARENT_ID" --reason "All child beads closed"; fi\`
+   - Call \`village_handoff\` with \`{ bead: "<id>", to: "inspector", note: "All checks passed: <summary>. Ready for final review." }\`
 5. If checks fail:
    - Call \`village_handoff\` with \`{ bead: "<id>", to: "worker", note: "Checks failed: <actionable bullets>" }\`
 6. Repeat from step 1.`;

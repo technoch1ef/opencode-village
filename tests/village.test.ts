@@ -163,13 +163,15 @@ describe("work loop prompt invariants", () => {
     expect(WORKER_WORK_LOOP_PROMPT).toContain("placed you on the bead's branch");
   });
 
-  test("inspector prompt references village_handoff to guard", () => {
+  test("inspector prompt closes beads on approval", () => {
     expect(INSPECTOR_WORK_LOOP_PROMPT).toContain("village_handoff");
-    expect(INSPECTOR_WORK_LOOP_PROMPT).toContain("guard");
+    expect(INSPECTOR_WORK_LOOP_PROMPT).toContain("br close");
+    expect(INSPECTOR_WORK_LOOP_PROMPT).toContain("Inspector approved");
   });
 
-  test("guard prompt can close beads on green checks", () => {
-    expect(GUARD_WORK_LOOP_PROMPT).toContain("br close");
-    expect(GUARD_WORK_LOOP_PROMPT).toContain("Approved");
+  test("guard prompt hands off to inspector on green checks", () => {
+    expect(GUARD_WORK_LOOP_PROMPT).toContain("village_handoff");
+    expect(GUARD_WORK_LOOP_PROMPT).toContain("inspector");
+    expect(GUARD_WORK_LOOP_PROMPT).toContain("All checks passed");
   });
 });
