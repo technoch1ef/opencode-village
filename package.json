@@ -1,6 +1,6 @@
 {
   "name": "@technoch1ef/opencode-village",
-  "version": "0.3.2",
+  "version": "0.4.0",
   "type": "module",
   "description": "Agentic Village workflow plugin for OpenCode — role-driven agents (mayor/worker/inspector/guard/envoy) backed by beads.",
   "main": "./dist/plugin.js",

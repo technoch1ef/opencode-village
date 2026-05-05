@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.4.0
+
+### Changed
+
+- **Handoff chain reordered**: `worker → guard → inspector` (was `worker → inspector → guard`). Guard (CI) runs before inspector (code review) to save LLM credits on broken builds.
+- **Guard** is no longer the terminal closer — it hands off to inspector on green.
+- **Inspector** is now the terminal closer — closes beads on approval, handles epic cascade close and envoy dispatch.
+- **Worker** hands off to guard (was inspector).
+
+### Upgrade note
+
+Re-run `npx @technoch1ef/opencode-village@latest init --all --force` to update agent prompts with the new chain order.
+
 ## 0.3.0
 
 ### Removed
