@@ -143,7 +143,7 @@ Use this workflow:
    - AC coverage: parse \`- [ ]\` items, verify each is addressed by the diff
    - Diff scope: flag files changed outside expected scope
    - Regression sniff: deleted tests, \`TODO\`/\`console.log\`, \`any\` casts, hardcoded secrets
-   - Stack review: apply each \`stack-*\` skill's \`## Review Checklist\` (if loaded via \`<available_skills>\`)
+   - Skill review: apply each loaded skill's \`## Review Checklist\` (if it has one)
 6. If judgment passes:
    - \`br close <id> --reason "Inspector approved: <structured summary>"\`
    - Cascade epic close if all children are closed.

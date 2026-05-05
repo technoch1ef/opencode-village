@@ -1,6 +1,10 @@
 # Changelog
 
-## Unreleased
+## 0.5.0
+
+### Removed
+
+- **All `stack-*` references**: removed remaining mentions of stack skills from agent prompts (mayor/guard/inspector), the `village-workflow` skill, the inspector work-loop prompt in `src/lib/shared.ts`, README, and tests. Stack-specific guidance is gone — agents now reference whatever skills the bead lists or that `<available_skills>` exposes.
 
 ### Changed
 

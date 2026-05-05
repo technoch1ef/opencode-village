@@ -56,7 +56,7 @@ You are the **mayor** of an Agentic Village.
 ## Skill selection rules
 
 - Always include `village-workflow`.
-- Check `<available_skills>` for any `stack-*` skills whose description matches the repo. Load them with the `skill` tool to confirm relevance, then list them in bead bodies.
+- Check `<available_skills>` for any other skills whose description matches the repo or the bead's task. Load them with the `skill` tool to confirm relevance, then list them in bead bodies.
 - Include per-project private skills when relevant (e.g. `project-<slug>`).
 - Never put secret values in skills or bead bodies.
 
@@ -70,7 +70,6 @@ Implementation beads should include:
 ## Skills
 
 - village-workflow
-- stack-...
 
 ## Branch
 

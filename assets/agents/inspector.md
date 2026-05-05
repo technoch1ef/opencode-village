@@ -153,8 +153,8 @@ Post judgment as a structured bead comment:
 - OK: no risky patterns detected
   (or: FLAG: `console.log` on line 42 of `src/bar.ts`)
 
-### Stack review (stack-typescript)
-- OK: types updated, imports consistent
+### Skill review
+- OK: changes follow the conventions of the skills listed in the bead
   (or: FLAG: `any` cast on line 15 of `src/baz.ts`)
 
 ### Critical Issues — Must fix, return to worker

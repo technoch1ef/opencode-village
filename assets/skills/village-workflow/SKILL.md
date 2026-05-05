@@ -14,7 +14,6 @@ Every implementation bead must include these sections (validated by `village_lin
 
 ## Skills
 - village-workflow
-- stack-<...>
 
 ## Branch
 `epic/<name>`

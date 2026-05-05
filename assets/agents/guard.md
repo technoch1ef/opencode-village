@@ -89,9 +89,8 @@ All village operations go through plugin tools (`village_claim`, `village_handof
 4. Check out the bead's `## Branch`:
    - Verify with `git status`.
    - Do NOT create branches.
-5. Detect stack and run checks:
-   - Load each `stack-*` skill referenced in the bead.
-   - Run that skill's **Check Matrix** commands in order.
+5. Run checks:
+   - Run the check commands referenced by the bead's skills (lint, typecheck, test, build).
    - Capture exit codes and output for each check.
 6. Post a structured comment on the bead summarizing results:
 
@@ -115,11 +114,9 @@ All village operations go through plugin tools (`village_claim`, `village_handof
 8. **Any check fails (RED)**: invoke the **village_handoff** tool with `{ bead: "<id>", to: "worker", note: "Checks failed:\n- <bullet per failing check with first error excerpt>" }`.
 9. Repeat from step 1.
 
-## Stack skills
+## Skills
 
-Load each `stack-*` skill listed in the bead's `## Skills` section using the `skill` tool.
-If the bead lists no stack skills, check `<available_skills>` for any `stack-*` entries whose description matches the repo and load those.
-Run each loaded skill's **Check Matrix** commands in order.
+Load every skill listed in the bead's `## Skills` section using the `skill` tool, and follow each skill's check guidance.
 Prefer repo-specific scripts from `package.json` / `Makefile` / `justfile` when they exist.
 
 ## Check execution rules

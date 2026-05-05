@@ -59,7 +59,6 @@ The plugin exposes all village operations as `village_*` tools. Agents and skill
 | Skill | Purpose |
 |-------|---------|
 | `village-workflow` | Roles, status flow, handoff conventions; loaded on every implementation bead |
-| `stack-*` | Per-stack check matrices (e.g. `stack-typescript`, `stack-ruby-on-rails`); discovered automatically via `<available_skills>` |
 
 ## Customization
 

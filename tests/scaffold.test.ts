@@ -33,7 +33,7 @@ describe("renderScaffoldDescription", () => {
     const result = renderScaffoldDescription({
       context: "Build the widget",
       branch: "epic/widgets",
-      skills: ["village-workflow", "stack-typescript"],
+      skills: ["village-workflow"],
       acceptance: "- [ ] Widget works",
       notes: "None",
     });
@@ -42,7 +42,6 @@ describe("renderScaffoldDescription", () => {
     expect(result).toContain("Build the widget");
     expect(result).toContain("## Skills");
     expect(result).toContain("- village-workflow");
-    expect(result).toContain("- stack-typescript");
     expect(result).toContain("## Branch");
     expect(result).toContain("`epic/widgets`");
     expect(result).toContain("## Acceptance Criteria");

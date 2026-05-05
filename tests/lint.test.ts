@@ -18,7 +18,6 @@ describe("lintBeadBody", () => {
     "## Skills",
     "",
     "- village-workflow",
-    "- stack-typescript",
     "",
     "## Branch",
     "",
@@ -83,7 +82,7 @@ describe("lintBeadBody", () => {
 
   test("fails when ## Skills has no entries", () => {
     const body = validBody
-      .replace("- village-workflow\n- stack-typescript", "- (fill in)");
+      .replace("- village-workflow", "- (fill in)");
     const result = lintBeadBody(body);
     expect(result.ok).toBe(false);
     expect(
@@ -92,16 +91,16 @@ describe("lintBeadBody", () => {
   });
 
   test("fails when skill is not in known skills registry", () => {
-    const knownSkills = new Set(["village-workflow", "stack-typescript"]);
+    const knownSkills = new Set(["village-workflow"]);
     const body = validBody.replace(
-      "- stack-typescript",
-      "- stack-nonexistent",
+      "- village-workflow",
+      "- skill-nonexistent",
     );
     const result = lintBeadBody(body, { knownSkills });
     expect(result.ok).toBe(false);
     expect(
       result.errors.some(
-        (e) => e.includes("stack-nonexistent") && e.includes("unknown skill"),
+        (e) => e.includes("skill-nonexistent") && e.includes("unknown skill"),
       ),
     ).toBe(true);
   });
@@ -109,7 +108,6 @@ describe("lintBeadBody", () => {
   test("passes when all skills are in known registry", () => {
     const knownSkills = new Set([
       "village-workflow",
-      "stack-typescript",
     ]);
     const result = lintBeadBody(validBody, { knownSkills });
     expect(result.ok).toBe(true);
