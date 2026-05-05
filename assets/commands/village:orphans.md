@@ -1,10 +1,10 @@
 # /village:orphans
 
-Report and optionally fix unassigned village beads.
+Report and fix unassigned village beads.
 
 ## Template
 
-Find orphan and suspect-assignee beads from open + in_progress work.
+Find orphan and suspect-assignee beads from open + in_progress work, then auto-assign them.
 
 Behavior:
 1. Graceful preflight:
@@ -15,7 +15,4 @@ Behavior:
    - Run `br list --status in_progress --json`
    - Combine both lists.
 3. Filter and report orphans/suspect assignees.
-
-Args:
-- `/village:orphans` -> report only.
-- `/village:orphans fix` -> after report, auto-assign orphans.
+4. Auto-assign all orphan non-epic beads to the inferred role.

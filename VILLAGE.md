@@ -23,7 +23,7 @@ All slash commands are namespaced under `/village:`:
 | `/village:work` | Trigger the work loop for the current agent's role |
 | `/village:board` | Show a read-only at-a-glance view of village state |
 | `/village:envoy` | Dispatch envoy to push a branch and open a PR |
-| `/village:orphans` | Report and optionally fix unassigned beads |
+| `/village:orphans` | Report and fix unassigned beads |
 
 Commands are installed under `commands/village/` (subdirectory → `/village:` namespace in OpenCode).
 

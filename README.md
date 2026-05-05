@@ -35,7 +35,7 @@ npx @technoch1ef/opencode-village init --all
 | `/village:work` | Trigger the work loop for the current agent's role |
 | `/village:board` | Show a read-only at-a-glance view of village state |
 | `/village:envoy` | Dispatch envoy to push a branch and open a PR for a bead or epic |
-| `/village:orphans` | Report and optionally fix unassigned beads |
+| `/village:orphans` | Report and fix unassigned beads |
 
 ## Tools
 
@@ -48,7 +48,7 @@ npx @technoch1ef/opencode-village init --all
 | `village_board` | Read-only ASCII board showing village state (roles × statuses) |
 | `village_ensure_branch` | Create or checkout an `epic/*` branch, fast-forward from base |
 | `village_invoke` | Dispatch a bead to a specialist (e.g. envoy) for processing |
-| `village_orphans` | Report orphan/suspect-assignee beads with optional auto-fix |
+| `village_orphans` | Report and fix orphan/suspect-assignee beads (always auto-assigns) |
 | `village_status` | List village sessions under the current root session |
 | `village_worktrees` | List the current worktree-to-bead mapping for all in-progress beads |
 

@@ -1,5 +1,5 @@
 /**
- * `village_orphans` tool — report and optionally fix unassigned beads.
+ * `village_orphans` tool — report and fix unassigned beads.
  *
  * @module
  */
@@ -20,9 +20,8 @@ import {
 export function createOrphansTool(helpers: SessionHelpers) {
   return tool({
     description:
-      "Report orphan/suspect-assignee beads (open + in_progress) and optionally fix unassigned non-epics.",
+      "Report and fix orphan/suspect-assignee beads (open + in_progress) — always assigns unassigned non-epics.",
     args: {
-      fix: tool.schema.boolean().optional(),
       limit: tool.schema.number().int().min(1).max(200).optional(),
       directory: tool.schema.string().optional(),
     },
@@ -131,8 +130,6 @@ export function createOrphansTool(helpers: SessionHelpers) {
           });
         for (const r of epicRows) lines.push(r);
       }
-
-      if (!args.fix) return lines.join("\n");
 
       const changed: string[] = [];
       const toFix = orphans.slice().sort(compareBrIssuesDeterministic);
