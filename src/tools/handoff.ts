@@ -5,18 +5,19 @@
  *   `br comments add <id> "..." && br update <id> --assignee X --status open`
  * with a single atomic tool call.
  *
- * **Handoff chain:** mayor -> worker -> inspector -> guard -> envoy (optional).
+ * **Handoff chain:** mayor -> worker -> guard -> inspector -> envoy (optional).
  *
  * **Allowed handoff matrix:**
- * - worker -> inspector (default after implementation)
- * - inspector -> guard (judgment passed) | worker (changes requested) | mayor (out of scope)
- * - guard -> worker (checks failed) | inspector (defensive: no inspector-pass) | envoy (only if bead body explicitly requests release/PR)
- *   - guard closes the bead itself on green (no handoff needed)
+ * - worker -> guard (default after implementation)
+ * - guard -> inspector (checks passed) | worker (checks failed)
+ *   - guard does NOT close beads; it always hands off to inspector on green
+ * - inspector -> worker (changes requested) | mayor (out of scope) | envoy (only if bead body explicitly requests release/PR)
+ *   - inspector closes the bead itself on approval (no handoff needed)
  * - mayor -> worker (rescope)
- * - envoy -> (none; envoy closes or returns to guard with comment)
+ * - envoy -> (none; envoy closes or returns to inspector with comment)
  *
  * **Closing happens at the end of the chain:**
- * - guard closes on green checks (default terminal)
+ * - inspector closes on approval (default terminal)
  * - envoy closes after merge (if invoked)
  *
  * @module
@@ -73,18 +74,18 @@ export function inferRoleFromTitle(
  *
  * | From       | To                          |
  * |------------|-----------------------------|
- * | worker     | inspector                   |
- * | inspector  | guard, worker, mayor        |
- * | guard      | worker, inspector, envoy    |
+ * | worker     | guard                       |
+ * | guard      | inspector, worker           |
+ * | inspector  | worker, mayor, envoy        |
  * | mayor      | worker                      |
  * | envoy      | (none)                      |
  */
 export const HANDOFF_MATRIX: Readonly<
   Record<VillageRole, ReadonlySet<VillageRole>>
 > = {
-  worker: new Set(["inspector"]),
-  inspector: new Set(["guard", "worker", "mayor"]),
-  guard: new Set(["worker", "inspector", "envoy"]),
+  worker: new Set(["guard"]),
+  guard: new Set(["inspector", "worker"]),
+  inspector: new Set(["worker", "mayor", "envoy"]),
   mayor: new Set(["worker"]),
   envoy: new Set(),
 };

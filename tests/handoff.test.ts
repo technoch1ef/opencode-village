@@ -28,23 +28,22 @@ describe("VILLAGE_ROLES", () => {
 });
 
 describe("HANDOFF_MATRIX", () => {
-  test("worker can only hand off to inspector", () => {
+  test("worker can only hand off to guard", () => {
     expect(HANDOFF_MATRIX.worker.size).toBe(1);
-    expect(HANDOFF_MATRIX.worker.has("inspector")).toBe(true);
+    expect(HANDOFF_MATRIX.worker.has("guard")).toBe(true);
   });
 
-  test("inspector can hand off to guard, worker, mayor", () => {
+  test("guard can hand off to inspector and worker", () => {
+    expect(HANDOFF_MATRIX.guard.size).toBe(2);
+    expect(HANDOFF_MATRIX.guard.has("inspector")).toBe(true);
+    expect(HANDOFF_MATRIX.guard.has("worker")).toBe(true);
+  });
+
+  test("inspector can hand off to worker, mayor, envoy", () => {
     expect(HANDOFF_MATRIX.inspector.size).toBe(3);
-    expect(HANDOFF_MATRIX.inspector.has("guard")).toBe(true);
     expect(HANDOFF_MATRIX.inspector.has("worker")).toBe(true);
     expect(HANDOFF_MATRIX.inspector.has("mayor")).toBe(true);
-  });
-
-  test("guard can hand off to worker, inspector, and envoy", () => {
-    expect(HANDOFF_MATRIX.guard.size).toBe(3);
-    expect(HANDOFF_MATRIX.guard.has("worker")).toBe(true);
-    expect(HANDOFF_MATRIX.guard.has("inspector")).toBe(true);
-    expect(HANDOFF_MATRIX.guard.has("envoy")).toBe(true);
+    expect(HANDOFF_MATRIX.inspector.has("envoy")).toBe(true);
   });
 
   test("mayor can only hand off to worker", () => {
@@ -59,12 +58,16 @@ describe("HANDOFF_MATRIX", () => {
 
 describe("isHandoffAllowed", () => {
   // Valid handoffs
-  test("worker -> inspector is allowed", () => {
-    expect(isHandoffAllowed("worker", "inspector")).toBe(true);
+  test("worker -> guard is allowed", () => {
+    expect(isHandoffAllowed("worker", "guard")).toBe(true);
   });
 
-  test("inspector -> guard is allowed", () => {
-    expect(isHandoffAllowed("inspector", "guard")).toBe(true);
+  test("guard -> inspector is allowed (checks passed)", () => {
+    expect(isHandoffAllowed("guard", "inspector")).toBe(true);
+  });
+
+  test("guard -> worker is allowed (checks failed)", () => {
+    expect(isHandoffAllowed("guard", "worker")).toBe(true);
   });
 
   test("inspector -> worker is allowed (changes requested)", () => {
@@ -75,12 +78,8 @@ describe("isHandoffAllowed", () => {
     expect(isHandoffAllowed("inspector", "mayor")).toBe(true);
   });
 
-  test("guard -> worker is allowed (checks failed)", () => {
-    expect(isHandoffAllowed("guard", "worker")).toBe(true);
-  });
-
-  test("guard -> envoy is allowed (release/PR)", () => {
-    expect(isHandoffAllowed("guard", "envoy")).toBe(true);
+  test("inspector -> envoy is allowed (release/PR)", () => {
+    expect(isHandoffAllowed("inspector", "envoy")).toBe(true);
   });
 
   test("mayor -> worker is allowed (rescope)", () => {
@@ -88,8 +87,8 @@ describe("isHandoffAllowed", () => {
   });
 
   // Invalid handoffs (actor -> target not in matrix)
-  test("worker -> guard is not allowed", () => {
-    expect(isHandoffAllowed("worker", "guard")).toBe(false);
+  test("worker -> inspector is not allowed", () => {
+    expect(isHandoffAllowed("worker", "inspector")).toBe(false);
   });
 
   test("worker -> mayor is not allowed", () => {
@@ -100,8 +99,8 @@ describe("isHandoffAllowed", () => {
     expect(isHandoffAllowed("worker", "envoy")).toBe(false);
   });
 
-  test("guard -> inspector is allowed (defensive return)", () => {
-    expect(isHandoffAllowed("guard", "inspector")).toBe(true);
+  test("guard -> envoy is not allowed", () => {
+    expect(isHandoffAllowed("guard", "envoy")).toBe(false);
   });
 
   test("envoy -> any is not allowed", () => {

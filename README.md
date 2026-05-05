@@ -21,12 +21,12 @@ npx @technoch1ef/opencode-village init --all
 | Role | Responsibility |
 |------|---------------|
 | **mayor** | Research, plan, create epics and child beads with `village_scaffold` |
-| **worker** | Implement bead tasks, make local commits, hand off to inspector |
-| **inspector** | Read-only judgment: AC coverage, scope check, regression sniff |
-| **guard** | Run tests/linters/build, close beads on green or return to worker |
+| **worker** | Implement bead tasks, make local commits, hand off to guard |
+| **guard** | Run tests/linters/build, hand off to inspector on green or return to worker |
+| **inspector** | Read-only judgment: AC coverage, scope check, regression sniff; close beads on approval |
 | **envoy** | Push, create PRs, handle releases (optional terminal step) |
 
-**Handoff chain:** mayor &rarr; worker &rarr; inspector &rarr; guard &rarr; envoy (optional)
+**Handoff chain:** mayor &rarr; worker &rarr; guard &rarr; inspector &rarr; envoy (optional)
 
 ## Commands
 
