@@ -65,6 +65,10 @@ The mayor never claims; the envoy is dispatched explicitly via `village_invoke` 
 | `village_status` | List village sessions under the current root session. |
 | `village_worktrees` | Show the current worktree → bead mapping. |
 
+## Commit hygiene
+
+The `.beads/` directory may be gitignored in a project. Never explicitly stage it (`git add .beads/`) or force-add it (`git add -f .beads/`). Use `git add -A`, which respects `.gitignore` automatically. If the directory is tracked (not gitignored), `git add -A` will include it with no special handling needed.
+
 ## Cross-repo handoff template
 
 When a bead's work is complete and the next agent (in this repo or another) needs context, post a structured handoff comment on the bead with **exactly** this shape:
