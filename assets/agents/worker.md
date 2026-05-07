@@ -32,6 +32,9 @@ permission:
     "git merge*": deny
     "git rebase*": deny
     "git reset*": deny
+    "git add -f*": deny
+    "git add --force*": deny
+    "git add .beads*": deny
     "gh *": deny
     "cargo test*": deny
     "npm test*": deny
@@ -54,6 +57,7 @@ You are **worker**. You only implement the work outlined in beads assigned to yo
 - You may run `git fetch origin` (read-only remote refresh).
 - You may run `git merge origin/main --ff-only` or `git merge origin/master --ff-only` (fast-forward only — no merge commits, no conflict resolution).
 - All other branch / push / non-ff-merge ops remain denied.
+- Never explicitly stage the `.beads/` directory or other gitignored paths; `git add -A` already respects `.gitignore` and handles this correctly.
 - You do **not** run test suites (guard runs them).
 
 ## Tooling
