@@ -1,5 +1,7 @@
-import { describe, expect, test } from "bun:test";
-import { resolve } from "node:path";
+import { afterEach, describe, expect, test } from "bun:test";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
 
 import {
   defaultSkillRegistryPaths,
@@ -250,17 +252,68 @@ describe("scanSkillRegistry", () => {
     // Should have skills from bundled assets dir (skills/ may not exist in a fresh checkout)
     expect(skills.has("village-workflow")).toBe(true);
   });
+
+  test("picks up skills installed in OPENCODE_CONFIG_DIR via defaultSkillRegistryPaths", async () => {
+    const ORIGINAL = process.env.OPENCODE_CONFIG_DIR;
+    const tmp = await mkdtemp(join(tmpdir(), "village-lint-"));
+    try {
+      await mkdir(join(tmp, "skills", "test-skill"), { recursive: true });
+      await writeFile(join(tmp, "skills", "test-skill", "SKILL.md"), "# test");
+      process.env.OPENCODE_CONFIG_DIR = tmp;
+      const skills = await scanSkillRegistry(
+        defaultSkillRegistryPaths("/some/unrelated/project"),
+      );
+      expect(skills.has("test-skill")).toBe(true);
+    } finally {
+      if (ORIGINAL === undefined) delete process.env.OPENCODE_CONFIG_DIR;
+      else process.env.OPENCODE_CONFIG_DIR = ORIGINAL;
+      await rm(tmp, { recursive: true, force: true });
+    }
+  });
 });
 
 // --- defaultSkillRegistryPaths ---
 
 describe("defaultSkillRegistryPaths", () => {
-  test("returns three paths relative to config dir", () => {
+  const ORIGINAL_OPENCODE = process.env.OPENCODE_CONFIG_DIR;
+  const ORIGINAL_XDG = process.env.XDG_CONFIG_HOME;
+
+  afterEach(() => {
+    if (ORIGINAL_OPENCODE === undefined) delete process.env.OPENCODE_CONFIG_DIR;
+    else process.env.OPENCODE_CONFIG_DIR = ORIGINAL_OPENCODE;
+    if (ORIGINAL_XDG === undefined) delete process.env.XDG_CONFIG_HOME;
+    else process.env.XDG_CONFIG_HOME = ORIGINAL_XDG;
+  });
+
+  test("includes the three project-local paths", () => {
     const paths = defaultSkillRegistryPaths("/foo/bar");
-    expect(paths).toEqual([
-      "/foo/bar/assets/skills",
-      "/foo/bar/skills",
-      "/foo/bar/skills-private",
-    ]);
+    expect(paths).toContain("/foo/bar/assets/skills");
+    expect(paths).toContain("/foo/bar/skills");
+    expect(paths).toContain("/foo/bar/skills-private");
+  });
+
+  test("includes global config skills paths when OPENCODE_CONFIG_DIR is set", () => {
+    process.env.OPENCODE_CONFIG_DIR = "/tmp/fake-opencode";
+    const paths = defaultSkillRegistryPaths("/foo/bar");
+    expect(paths).toContain("/tmp/fake-opencode/skills");
+    expect(paths).toContain("/tmp/fake-opencode/skills-private");
+  });
+
+  test("falls back to ~/.config/opencode when OPENCODE_CONFIG_DIR is unset", () => {
+    delete process.env.OPENCODE_CONFIG_DIR;
+    delete process.env.XDG_CONFIG_HOME;
+    const paths = defaultSkillRegistryPaths("/foo/bar");
+    expect(
+      paths.some((p) => p.endsWith("/opencode/skills")),
+    ).toBe(true);
+    expect(
+      paths.some((p) => p.endsWith("/opencode/skills-private")),
+    ).toBe(true);
+  });
+
+  test("de-duplicates entries when project dir equals global config dir", () => {
+    process.env.OPENCODE_CONFIG_DIR = "/foo/bar";
+    const paths = defaultSkillRegistryPaths("/foo/bar");
+    expect(new Set(paths).size).toBe(paths.length);
   });
 });
