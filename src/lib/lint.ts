@@ -8,6 +8,7 @@
  */
 
 import { readdir, stat } from "node:fs/promises";
+import { homedir } from "node:os";
 import { join } from "node:path";
 
 /**
@@ -211,12 +212,39 @@ export async function scanSkillRegistry(dirs: string[]): Promise<Set<string>> {
 }
 
 /**
+ * Resolve the OpenCode global config directory.
+ *
+ * Precedence:
+ *   1. `OPENCODE_CONFIG_DIR` (if set and non-empty)
+ *   2. `${XDG_CONFIG_HOME ?? ~/.config}/opencode`
+ */
+function resolveGlobalConfigDir(): string {
+  const explicit = process.env.OPENCODE_CONFIG_DIR;
+  if (explicit && explicit.length > 0) return explicit;
+  const xdg = process.env.XDG_CONFIG_HOME;
+  const base = xdg && xdg.length > 0 ? xdg : join(homedir(), ".config");
+  return join(base, "opencode");
+}
+
+/**
  * Build the default skill registry paths for the OpenCode config directory.
+ *
+ * Returns the project-local skill paths plus the OpenCode global config dir's
+ * `skills` and `skills-private` directories so globally-installed skills (e.g.
+ * those installed via `opencode-village init --all`) are recognized by the
+ * scaffold/lint validators.
+ *
+ * The returned array is de-duplicated to handle the case where the project
+ * itself happens to be the global config dir.
  */
 export function defaultSkillRegistryPaths(configDir: string): string[] {
-  return [
+  const globalConfigDir = resolveGlobalConfigDir();
+  const paths = [
     join(configDir, "assets", "skills"),
     join(configDir, "skills"),
     join(configDir, "skills-private"),
+    join(globalConfigDir, "skills"),
+    join(globalConfigDir, "skills-private"),
   ];
+  return Array.from(new Set(paths));
 }
