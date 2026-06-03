@@ -28,9 +28,10 @@ describe("VILLAGE_ROLES", () => {
 });
 
 describe("HANDOFF_MATRIX", () => {
-  test("worker can only hand off to guard", () => {
-    expect(HANDOFF_MATRIX.worker.size).toBe(1);
+  test("worker can hand off to guard and mayor", () => {
+    expect(HANDOFF_MATRIX.worker.size).toBe(2);
     expect(HANDOFF_MATRIX.worker.has("guard")).toBe(true);
+    expect(HANDOFF_MATRIX.worker.has("mayor")).toBe(true);
   });
 
   test("guard can hand off to inspector and worker", () => {
@@ -86,13 +87,13 @@ describe("isHandoffAllowed", () => {
     expect(isHandoffAllowed("mayor", "worker")).toBe(true);
   });
 
+  test("worker -> mayor is allowed (blocked / out of scope)", () => {
+    expect(isHandoffAllowed("worker", "mayor")).toBe(true);
+  });
+
   // Invalid handoffs (actor -> target not in matrix)
   test("worker -> inspector is not allowed", () => {
     expect(isHandoffAllowed("worker", "inspector")).toBe(false);
-  });
-
-  test("worker -> mayor is not allowed", () => {
-    expect(isHandoffAllowed("worker", "mayor")).toBe(false);
   });
 
   test("worker -> envoy is not allowed", () => {

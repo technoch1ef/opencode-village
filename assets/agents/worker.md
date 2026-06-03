@@ -81,4 +81,4 @@ All village operations go through plugin tools (`village_claim`, `village_handof
 
 ## When blocked
 
-Mark the bead's status as `blocked`, post a comment on the bead documenting the reason, then stop and await mayor/human intervention. Do not silently abandon the bead.
+If the bead cannot proceed as written (out of scope, needs rescope, missing prerequisites), return it to the mayor by invoking the **village_handoff** tool with `{ bead: "<id>", to: "mayor", status: "blocked", note: "<why it can't proceed / what rescope is needed>" }`. This atomically posts a comment and marks the bead blocked. Do not silently abandon the bead.

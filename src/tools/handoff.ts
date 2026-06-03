@@ -8,7 +8,8 @@
  * **Handoff chain:** mayor -> worker -> guard -> inspector -> envoy (optional).
  *
  * **Allowed handoff matrix:**
- * - worker -> guard (default after implementation)
+ * - worker -> guard (default after implementation) | mayor (return when blocked:
+ *   out-of-scope or needs rescope; always forced to status=blocked)
  * - guard -> inspector (checks passed) | worker (checks failed)
  *   - guard does NOT close beads; it always hands off to inspector on green
  * - inspector -> worker (changes requested) | mayor (out of scope) | envoy (only if bead body explicitly requests release/PR)
@@ -74,7 +75,7 @@ export function inferRoleFromTitle(
  *
  * | From       | To                          |
  * |------------|-----------------------------|
- * | worker     | guard                       |
+ * | worker     | guard, mayor                |
  * | guard      | inspector, worker           |
  * | inspector  | worker, mayor, envoy        |
  * | mayor      | worker                      |
@@ -83,7 +84,7 @@ export function inferRoleFromTitle(
 export const HANDOFF_MATRIX: Readonly<
   Record<VillageRole, ReadonlySet<VillageRole>>
 > = {
-  worker: new Set(["guard"]),
+  worker: new Set(["guard", "mayor"]),
   guard: new Set(["inspector", "worker"]),
   inspector: new Set(["worker", "mayor", "envoy"]),
   mayor: new Set(["worker"]),
@@ -181,10 +182,19 @@ export function createHandoffTool(helpers: SessionHelpers) {
         );
       }
 
-      const status = args.status ?? "open";
-      const comment = formatHandoffComment(from, args.to, args.note);
+      // A worker returning a bead to the mayor signals it cannot proceed as
+      // written (out-of-scope / needs rescope), so it is always blocked.
+      let status = args.status ?? "open";
+      if (from === "worker" && args.to === "mayor") {
+        if (args.status && args.status !== "blocked") {
+          throw new Error(
+            "village_handoff: worker\u2192mayor returns must set status=blocked (bead cannot proceed as written).",
+          );
+        }
+        status = "blocked";
+      }
 
-      // Post standardized comment.
+      const comment = formatHandoffComment(from, args.to, args.note);
       await execFileText("br", ["comments", "add", args.bead, comment], {
         cwd: directory,
         env: { ...process.env, BD_ACTOR: from },

@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.6.3
+
+### Fixed
+
+- **Worker can return a bead to the mayor**: `village_handoff` previously rejected `worker → mayor` (allowed targets were `guard` only), leaving a blocked worker with no way to hand work back for rescoping. `worker → mayor` is now permitted and always forced to `status=blocked` (passing any other status throws). The worker agent's "When blocked" guidance now instructs returning the bead via `village_handoff` instead of just commenting.
+
+### Upgrade note
+
+Re-run `npx @technoch1ef/opencode-village@latest init --all --force` to refresh the worker agent prompt.
+
 ## 0.5.0
 
 ### Removed
