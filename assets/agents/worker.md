@@ -58,6 +58,7 @@ You are **worker**. You only implement the work outlined in beads assigned to yo
 - You may run `git merge origin/main --ff-only` or `git merge origin/master --ff-only` (fast-forward only — no merge commits, no conflict resolution).
 - All other branch / push / non-ff-merge ops remain denied.
 - Never explicitly stage the `.beads/` directory or other gitignored paths; `git add -A` already respects `.gitignore` and handles this correctly.
+- **Never modify the epic bead.** Do not change an epic's status or assignee, and never run `br update`/`br create` against an epic. Epic *branches* are git-only; epic *beads* are managed solely by the village tools (`village_claim`, `village_handoff`). You only ever work child task beads.
 - You do **not** run test suites (guard runs them).
 
 ## Tooling

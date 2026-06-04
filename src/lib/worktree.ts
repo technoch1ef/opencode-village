@@ -192,6 +192,9 @@ export async function checkWorktreeConflict(
   if (!Array.isArray(allInProgress)) return null;
 
   for (const bead of allInProgress) {
+    // Epics are containers, never claimed in a worktree. Ignore them so a
+    // mis-set in_progress epic can't produce a phantom conflict.
+    if (bead.issue_type === "epic") continue;
     const beadAssignee = (bead.assignee ?? "").trim();
     // Skip beads from the same assignee — same-assignee re-claim is allowed.
     if (beadAssignee === assignee) continue;

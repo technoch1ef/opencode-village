@@ -122,6 +122,9 @@ export async function selectFilteredReady(
 
   for (const bead of sorted) {
     if (!bead.id) continue;
+    // Epics are containers, never claimable work items. Skip them regardless
+    // of assignee so a mis-assigned epic can never be claimed as a task.
+    if (bead.issue_type === "epic") continue;
     const comments = await fetchBeadComments(bead.id, options);
 
     if (isDefault) {
@@ -184,10 +187,17 @@ export function createClaimTool(helpers: SessionHelpers) {
       // Resolve worktree path for conflict detection.
       const worktreePath = await resolveWorktreePath(directory);
 
-      const inProgress = (await execBrJson<BrIssue[]>(
+      const inProgressRaw = (await execBrJson<BrIssue[]>(
         ["list", "--status", "in_progress", "--assignee", assignee, "--json"],
         { cwd: directory, actor: assignee },
       )) as BrIssue[];
+
+      // Epics are containers, not claimable work. A mis-set in_progress epic
+      // must not count as this role's active bead (which would otherwise wedge
+      // the claim loop or trigger the multiple-in_progress guard).
+      const inProgress = inProgressRaw.filter(
+        (i) => i.issue_type !== "epic",
+      );
 
       const guard = guardSingleInProgress(inProgress);
       if (guard.kind === "existing") {

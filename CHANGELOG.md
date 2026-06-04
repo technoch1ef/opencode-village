@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.6.4
+
+### Fixed
+
+- **Epics can no longer wedge the village**: a worker (or any role) that mis-set an epic bead to `in_progress`/assigned could stall the pipeline — `village_claim` would "claim" the epic ahead of real child tasks and stamp a worktree comment on it, and `checkWorktreeConflict` would then report a phantom `worktree_conflict` that blocked guard from claiming in the same worktree. The plugin now treats epics as containers, never as claimable work:
+  - `village_claim` / `selectFilteredReady` skip any bead with `issue_type === "epic"`, and an in-progress epic no longer counts as a role's active bead (so it can't trigger the single/multiple in_progress guard).
+  - `checkWorktreeConflict` ignores in-progress epics, eliminating the phantom conflict.
+  - The worker agent prompt now explicitly forbids modifying epic beads (status/assignee); epic *branches* remain git-only.
+
+### Upgrade note
+
+Re-run `npx @technoch1ef/opencode-village@latest init --all --force` to refresh the worker agent prompt.
+
 ## 0.6.3
 
 ### Fixed

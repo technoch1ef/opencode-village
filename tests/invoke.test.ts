@@ -7,6 +7,7 @@ import {
   hasSpecialistMarker,
   parseSpecialistFromComment,
 } from "../src/tools/invoke";
+import { selectFilteredReady } from "../src/tools/claim";
 import type { BrIssue } from "../src/lib/shared";
 
 // ---------------------------------------------------------------------------
@@ -261,5 +262,35 @@ describe("selectFilteredReady", () => {
     }
 
     expect(selected).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// selectFilteredReady — epic filtering (real function call)
+// ---------------------------------------------------------------------------
+describe("selectFilteredReady epic filtering", () => {
+  // Epics are skipped before any comment fetch, so these calls never touch br.
+  test("skips an epic even when assigned to worker", async () => {
+    const ready: BrIssue[] = [
+      {
+        id: "epic-1",
+        title: "the epic",
+        priority: 1,
+        assignee: "worker",
+        issue_type: "epic",
+      },
+    ];
+
+    const selected = await selectFilteredReady(ready, "worker", {});
+    expect(selected).toBeNull();
+  });
+
+  test("skips epics regardless of role", async () => {
+    const ready: BrIssue[] = [
+      { id: "epic-1", title: "epic", priority: 0, issue_type: "epic" },
+    ];
+
+    expect(await selectFilteredReady(ready, "guard", {})).toBeNull();
+    expect(await selectFilteredReady(ready, "inspector", {})).toBeNull();
   });
 });

@@ -266,6 +266,27 @@ describe("mocked I/O (dependency injection)", () => {
       );
       expect(result).toBeNull();
     });
+
+    test("ignores in-progress epics (no phantom conflict)", async () => {
+      mockExecBrJson.mockResolvedValueOnce([
+        {
+          id: "epic-1",
+          assignee: "worker",
+          title: "the epic",
+          status: "in_progress",
+          issue_type: "epic",
+        },
+      ]);
+      // If the epic were not skipped, getWorktreeFromBead would match and
+      // produce a conflict. It must never be called for epics.
+      const result = await checkWorktreeConflict(
+        "/Users/me/project",
+        "guard",
+        {},
+        mockDeps,
+      );
+      expect(result).toBeNull();
+    });
   });
 
   describe("getWorktreeMapping (mocked)", () => {
