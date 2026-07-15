@@ -1,6 +1,6 @@
 ---
 name: village-workflow
-description: Agentic Village epic/task workflow — roles, status flow, and handoff conventions driven by village_* plugin tools.
+description: Agentic Village epic/task workflow — roles, status flow, and handoff conventions driven by village_* plugin tools. Use ONLY when acting as a village role (mayor, worker, guard, inspector, envoy) or when the user explicitly requests village/beads work. Default agents (build, plan, explore, general) must not load this skill.
 ---
 
 The village workflow coordinates five roles (mayor, worker, guard, inspector, envoy) through a deterministic chain of plugin tools. Always prefer a `village_*` tool over any equivalent shell command.
@@ -68,6 +68,45 @@ The mayor never claims; the envoy is dispatched explicitly via `village_invoke` 
 ## Commit hygiene
 
 The `.beads/` directory may be gitignored in a project. Never explicitly stage it (`git add .beads/`) or force-add it (`git add -f .beads/`). Use `git add -A`, which respects `.gitignore` automatically. If the directory is tracked (not gitignored), `git add -A` will include it with no special handling needed.
+
+## Beads CLI essentials
+
+**Note:** `br` is non-invasive and never executes git commands. After `br sync --flush-only`, you must manually run `git add .beads/ && git commit`.
+
+- Village roles use Beads for all work tracking (`br create`, `br update`, `br close`) — never markdown files or TodoWrite.
+- If you were dropped into a new/compacted village session, run `br prime` to recover Beads context.
+- Keep bead bodies free of secrets (no tokens/keys/seed phrases).
+- Priority: P0=critical, P1=high, P2=medium, P3=low, P4=backlog (use numbers, not words).
+- Types: task, bug, feature, epic, question, docs.
+
+```bash
+br ready
+br list --status open
+br show <id>
+br update <id> --status in_progress
+br close <id> --reason "..."
+```
+
+### Shell snippets (copy/paste safe)
+
+- Avoid literal `\n` tokens between commands (e.g. `br create ...; \nbr update ...`); in zsh/bash, `\nbr` is parsed as `nbr`.
+- Prefer fenced code blocks with real newlines, or `&&`/`;` separators on a single line:
+
+```bash
+br create "..." && br update <id> --status in_progress
+```
+
+### Session close protocol
+
+Before ending any village session:
+
+```bash
+git status
+git add <files>
+br sync --flush-only
+git add .beads/
+git commit -m "..."
+```
 
 ## Cross-repo handoff template
 

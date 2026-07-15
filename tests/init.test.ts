@@ -20,7 +20,16 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { patchConfig, installCat, type PatchConfigOpts, type Opts } from "../bin/init";
+import {
+  patchConfig,
+  installCat,
+  entryMatches,
+  ensureVillageScoping,
+  VILLAGE_AGENT_NAMES,
+  type PatchConfigOpts,
+  type Opts,
+  type PluginEntry,
+} from "../bin/init";
 
 const PLUGIN = "@technoch1ef/opencode-village";
 const BEADS_RUST_PLUGIN = "@technoch1ef/opencode-beads-rust";
@@ -30,10 +39,24 @@ function makeOpts(overrides: Partial<PatchConfigOpts> = {}): PatchConfigOpts {
   return { dryRun: false, force: false, ...overrides };
 }
 
-function readPlugins(dir: string): string[] {
+function readConfig(dir: string): Record<string, unknown> {
   const p = join(dir, "opencode.json");
-  if (!existsSync(p)) return [];
-  return (JSON.parse(readFileSync(p, "utf-8")) as { plugin?: string[] }).plugin ?? [];
+  if (!existsSync(p)) return {};
+  return JSON.parse(readFileSync(p, "utf-8")) as Record<string, unknown>;
+}
+
+function readPlugins(dir: string): PluginEntry[] {
+  return (readConfig(dir).plugin as PluginEntry[] | undefined) ?? [];
+}
+
+function hasPlugin(plugins: PluginEntry[], pkg: string): boolean {
+  return plugins.some((e) => entryMatches(e, pkg));
+}
+
+/** Find the beads-rust entry and return its options (if tuple form). */
+function beadsRustOptions(plugins: PluginEntry[]): Record<string, unknown> | undefined {
+  const entry = plugins.find((e) => entryMatches(e, BEADS_RUST_PLUGIN));
+  return Array.isArray(entry) ? entry[1] : undefined;
 }
 
 describe("patchConfig", () => {
@@ -49,14 +72,14 @@ describe("patchConfig", () => {
 
   // ── Core acceptance criterion ────────────────────────────────────────
 
-  test("--all --force: both plugin names land in opencode.json", async () => {
+  test("--all --force: both plugins land in opencode.json", async () => {
     const opts = makeOpts({ force: true });
     const changed = await patchConfig(tmpDir, opts);
 
     expect(changed).toBe(true);
     const plugins = readPlugins(tmpDir);
     expect(plugins).toContain(PLUGIN);
-    expect(plugins).toContain(BEADS_RUST_PLUGIN);
+    expect(hasPlugin(plugins, BEADS_RUST_PLUGIN)).toBe(true);
   });
 
   // ── Fresh install (no pre-existing opencode.json) ────────────────────
@@ -67,16 +90,156 @@ describe("patchConfig", () => {
 
     const plugins = readPlugins(tmpDir);
     expect(plugins).toContain(PLUGIN);
-    expect(plugins).toContain(BEADS_RUST_PLUGIN);
+    expect(hasPlugin(plugins, BEADS_RUST_PLUGIN)).toBe(true);
   });
 
-  // ── Idempotency ───────────────────────────────────────────────────────
+  test("fresh install registers beads-rust with a village inject allowlist", async () => {
+    await patchConfig(tmpDir, makeOpts({ force: true }));
 
-  test("is idempotent: re-running with both plugins already registered returns false", async () => {
+    const options = beadsRustOptions(readPlugins(tmpDir));
+    expect(options).toBeDefined();
+    expect(options?.inject).toEqual([...VILLAGE_AGENT_NAMES]);
+  });
+
+  test("fresh install writes village-only scoping keys", async () => {
+    await patchConfig(tmpDir, makeOpts({ force: true }));
+
+    const cfg = readConfig(tmpDir);
+    expect((cfg.tools as Record<string, unknown>)["village_*"]).toBe(false);
+    const skill = (cfg.permission as Record<string, Record<string, unknown>>).skill;
+    expect(skill["village-workflow"]).toBe("deny");
+    expect(skill["*"]).toBe("allow");
+  });
+
+  // ── Entry recognition (pinned / tuple / file path) ────────────────────
+
+  test("recognizes pinned and tuple entries: no duplicate registration", async () => {
+    const cfgPath = join(tmpDir, "opencode.json");
+    writeFileSync(
+      cfgPath,
+      JSON.stringify(
+        {
+          plugin: [
+            `${PLUGIN}@0.6.5`,
+            [BEADS_RUST_PLUGIN, { inject: ["mayor"] }],
+          ],
+          tools: { "village_*": false },
+          permission: { skill: { "*": "allow", "village-workflow": "deny" } },
+        },
+        null,
+        2,
+      ) + "\n",
+    );
+
+    const changed = await patchConfig(tmpDir, makeOpts({ force: true }));
+
+    expect(changed).toBe(false);
+    const plugins = readPlugins(tmpDir);
+    expect(plugins).toHaveLength(2);
+    // User's existing inject option is preserved untouched
+    expect(beadsRustOptions(plugins)?.inject).toEqual(["mayor"]);
+  });
+
+  test("recognizes file-path entries pointing at a local checkout", async () => {
+    const cfgPath = join(tmpDir, "opencode.json");
+    writeFileSync(
+      cfgPath,
+      JSON.stringify(
+        {
+          plugin: [
+            PLUGIN,
+            ["file:///home/u/Repositories/opencode-beads-rust/src/plugin.ts", { inject: [] }],
+          ],
+          tools: { "village_*": false },
+          permission: { skill: { "village-workflow": "deny" } },
+        },
+        null,
+        2,
+      ) + "\n",
+    );
+
+    const changed = await patchConfig(tmpDir, makeOpts({ force: true }));
+
+    expect(changed).toBe(false);
+    expect(readPlugins(tmpDir)).toHaveLength(2);
+  });
+
+  // ── Village-only scoping ──────────────────────────────────────────────
+
+  test("adds scoping keys to an existing config that lacks them", async () => {
     const cfgPath = join(tmpDir, "opencode.json");
     writeFileSync(
       cfgPath,
       JSON.stringify({ plugin: [PLUGIN, BEADS_RUST_PLUGIN] }, null, 2) + "\n",
+    );
+
+    const changed = await patchConfig(tmpDir, makeOpts({ force: true }));
+
+    expect(changed).toBe(true);
+    const cfg = readConfig(tmpDir);
+    expect((cfg.tools as Record<string, unknown>)["village_*"]).toBe(false);
+    expect(
+      (cfg.permission as Record<string, Record<string, unknown>>).skill["village-workflow"],
+    ).toBe("deny");
+  });
+
+  test("scoping never overwrites explicit user values", () => {
+    const cfg: Record<string, unknown> = {
+      tools: { "village_*": true },
+      permission: { skill: { "village-workflow": "allow" } },
+    };
+
+    const changed = ensureVillageScoping(cfg, makeOpts());
+
+    expect(changed).toBe(false);
+    expect((cfg.tools as Record<string, unknown>)["village_*"]).toBe(true);
+    expect(
+      (cfg.permission as Record<string, Record<string, unknown>>).skill["village-workflow"],
+    ).toBe("allow");
+  });
+
+  test("scoping expands a flat skill permission string, preserving the default", () => {
+    const cfg: Record<string, unknown> = { permission: { skill: "ask" } };
+
+    const changed = ensureVillageScoping(cfg, makeOpts());
+
+    expect(changed).toBe(true);
+    const skill = (cfg.permission as Record<string, Record<string, unknown>>).skill;
+    expect(skill["*"]).toBe("ask");
+    expect(skill["village-workflow"]).toBe("deny");
+  });
+
+  // ── entryMatches ──────────────────────────────────────────────────────
+
+  test("entryMatches handles specs, pins, tuples, and paths", () => {
+    expect(entryMatches(BEADS_RUST_PLUGIN, BEADS_RUST_PLUGIN)).toBe(true);
+    expect(entryMatches(`${BEADS_RUST_PLUGIN}@0.2.0`, BEADS_RUST_PLUGIN)).toBe(true);
+    expect(entryMatches([BEADS_RUST_PLUGIN, {}], BEADS_RUST_PLUGIN)).toBe(true);
+    expect(
+      entryMatches("file:///x/opencode-beads-rust/src/plugin.ts", BEADS_RUST_PLUGIN),
+    ).toBe(true);
+    expect(entryMatches("~/Repositories/opencode-beads-rust", BEADS_RUST_PLUGIN)).toBe(true);
+    // No cross-matching between legacy and rust variants
+    expect(entryMatches(BEADS_RUST_PLUGIN, BEADS_LEGACY_PLUGIN)).toBe(false);
+    expect(entryMatches(BEADS_LEGACY_PLUGIN, BEADS_RUST_PLUGIN)).toBe(false);
+    expect(entryMatches(42, BEADS_RUST_PLUGIN)).toBe(false);
+  });
+
+  // ── Idempotency ───────────────────────────────────────────────────────
+
+  test("is idempotent: re-running a fully patched config returns false", async () => {
+    const cfgPath = join(tmpDir, "opencode.json");
+    writeFileSync(
+      cfgPath,
+      JSON.stringify(
+        {
+          plugin: [PLUGIN, BEADS_RUST_PLUGIN],
+          tools: { "village_*": false },
+          permission: { skill: { "*": "allow", "village-workflow": "deny" } },
+        },
+        null,
+        2,
+      ) + "\n",
     );
 
     const opts = makeOpts({ force: true });
@@ -123,8 +286,10 @@ describe("patchConfig", () => {
 
     expect(changed).toBe(true);
     const plugins = readPlugins(tmpDir);
-    expect(plugins).toContain(BEADS_RUST_PLUGIN);
-    expect(plugins).not.toContain(BEADS_LEGACY_PLUGIN);
+    expect(hasPlugin(plugins, BEADS_RUST_PLUGIN)).toBe(true);
+    expect(hasPlugin(plugins, BEADS_LEGACY_PLUGIN)).toBe(false);
+    // Replacement entry is scoped to village agents
+    expect(beadsRustOptions(plugins)?.inject).toEqual([...VILLAGE_AGENT_NAMES]);
   });
 
   test("without --force, leaves legacy opencode-beads in place (non-TTY = conservative default)", async () => {
@@ -141,8 +306,8 @@ describe("patchConfig", () => {
     // Village plugin should still be added; beads-rust should not replace legacy
     const plugins = readPlugins(tmpDir);
     expect(plugins).toContain(PLUGIN);
-    expect(plugins).toContain(BEADS_LEGACY_PLUGIN);
-    expect(plugins).not.toContain(BEADS_RUST_PLUGIN);
+    expect(hasPlugin(plugins, BEADS_LEGACY_PLUGIN)).toBe(true);
+    expect(hasPlugin(plugins, BEADS_RUST_PLUGIN)).toBe(false);
     expect(changed).toBe(true); // village was added
   });
 
@@ -177,7 +342,7 @@ describe("patchConfig", () => {
     expect(changed).toBe(true);
     const plugins = readPlugins(tmpDir);
     expect(plugins).toContain(PLUGIN);
-    expect(plugins).toContain(BEADS_RUST_PLUGIN);
+    expect(hasPlugin(plugins, BEADS_RUST_PLUGIN)).toBe(true);
     // No duplicates
     expect(plugins.filter((p) => p === PLUGIN)).toHaveLength(1);
   });
@@ -195,7 +360,7 @@ describe("patchConfig", () => {
     const plugins = readPlugins(tmpDir);
     expect(plugins).toContain("some-other-plugin");
     expect(plugins).toContain(PLUGIN);
-    expect(plugins).toContain(BEADS_RUST_PLUGIN);
+    expect(hasPlugin(plugins, BEADS_RUST_PLUGIN)).toBe(true);
   });
 
   test("creates parent directories for opencode.json if they do not exist", async () => {
@@ -207,7 +372,7 @@ describe("patchConfig", () => {
 
     const plugins = readPlugins(nestedDir);
     expect(plugins).toContain(PLUGIN);
-    expect(plugins).toContain(BEADS_RUST_PLUGIN);
+    expect(hasPlugin(plugins, BEADS_RUST_PLUGIN)).toBe(true);
   });
 });
 

@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.7.0
+
+### Changed
+
+- **Village-only scoping: beads and village tools no longer leak into default agents** (`build`, `plan`, `explore`, `general`, or custom agents). The village workflow is reserved for the five village roles; everyone else stays beads-unaware:
+  - **Agent assets** now re-enable village tools per-role: every agent frontmatter gains `"village_*": true` under `tools:` and `skill: { "village-workflow": allow }` under `permission:`, pairing with a global `tools: { "village_*": false }` that hides the tools from all other agents.
+  - **`init` writes the global scoping** into `opencode.json`: `tools["village_*"] = false` and `permission.skill["village-workflow"] = "deny"` (never overwriting explicit user values; flat `skill` permission strings are expanded preserving the user's default).
+  - **`init` registers `@technoch1ef/opencode-beads-rust` using the tuple form** with an `inject` allowlist of the village roles, so beads context injection (`br prime` + CLI guidance) reaches only village agents. Requires `opencode-beads-rust >= 0.2.0` for the option to take effect (older versions ignore it harmlessly).
+  - **`village-workflow` skill** now carries a "Beads CLI essentials" section (quick reference, shell-snippet safety, session close protocol) so village roles are self-sufficient without a beads manual in the global `AGENTS.md`, and its description gates loading to village roles only.
+
+### Fixed
+
+- **`init` plugin registration now recognizes pinned, tuple, and file-path entries** (`@scope/pkg@1.2.3`, `[spec, options]`, `file:///…/pkg/src/plugin.ts`). Previously a pinned entry like `@technoch1ef/opencode-village@0.6.5` was not recognized and `init` appended a duplicate unpinned entry.
+
+### Upgrade note
+
+Re-run `npx @technoch1ef/opencode-village@latest init --all --force` to refresh assets and apply the scoping to `opencode.json`. Note the installer cannot parse JSONC configs (comments/trailing commas) — apply the `tools`/`permission.skill` scoping manually in that case.
+
 ## 0.6.5
 
 ### Fixed

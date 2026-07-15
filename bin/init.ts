@@ -30,6 +30,20 @@ const ASSETS = existsSync(resolve(SELF, "..", "assets"))
 const PLUGIN = "@technoch1ef/opencode-village";
 const BEADS_RUST_PLUGIN = "@technoch1ef/opencode-beads-rust";
 const BEADS_LEGACY_PLUGIN = "@technoch1ef/opencode-beads";
+
+/**
+ * Village role agent names. Used to scope beads context injection: the
+ * beads-rust plugin is registered with an `inject` allowlist so that only
+ * village roles (plus its own beads-task-agent) receive `br prime` context.
+ * Default agents (build/plan/explore/general) stay beads-unaware.
+ */
+export const VILLAGE_AGENT_NAMES = [
+  "mayor",
+  "worker",
+  "guard",
+  "inspector",
+  "envoy",
+] as const;
 export const CATEGORIES = ["agents", "commands", "skills"] as const;
 export type Category = (typeof CATEGORIES)[number];
 
@@ -219,6 +233,91 @@ export async function installCat(
  *
  * Returns `true` if opencode.json was actually written.
  */
+
+/** A plugin array entry: npm spec / file path, or a `[spec, options]` tuple. */
+export type PluginEntry = string | [string, Record<string, unknown>];
+
+/**
+ * Does a plugin entry reference the given package?
+ *
+ * Recognizes, for both plain-string and `[spec, options]` tuple entries:
+ *   - exact npm name:           `@scope/pkg`
+ *   - pinned npm spec:          `@scope/pkg@1.2.3`
+ *   - file/path entries into a local checkout: `file:///…/pkg/src/plugin.ts`
+ */
+export function entryMatches(entry: unknown, pkg: string): boolean {
+  const spec = Array.isArray(entry) ? entry[0] : entry;
+  if (typeof spec !== "string") return false;
+  if (spec === pkg || spec.startsWith(`${pkg}@`)) return true;
+  const bareName = pkg.split("/").pop() ?? pkg;
+  return spec.includes(`/${bareName}/`) || spec.endsWith(`/${bareName}`);
+}
+
+/** The beads-rust entry registered on fresh installs: scoped to village roles. */
+function beadsRustEntry(): PluginEntry {
+  return [BEADS_RUST_PLUGIN, { inject: [...VILLAGE_AGENT_NAMES] }];
+}
+
+/**
+ * Ensure village-only scoping keys in opencode.json:
+ *
+ *   - `tools["village_*"] = false` — hide village tools from all agents;
+ *     the installed village agents re-enable them via frontmatter
+ *     (`"village_*": true`).
+ *   - `permission.skill["village-workflow"] = "deny"` — block the skill for
+ *     non-village agents; village agents re-allow it via frontmatter.
+ *
+ * Existing user values are never overwritten. Returns true if cfg changed.
+ */
+export function ensureVillageScoping(
+  cfg: Record<string, unknown>,
+  o: PatchConfigOpts,
+): boolean {
+  let changed = false;
+
+  // tools["village_*"] = false
+  const tools = (cfg.tools ?? {}) as Record<string, unknown>;
+  if (!("village_*" in tools)) {
+    if (o.dryRun) {
+      log(`opencode.json: would set tools["village_*"] = false (village-only scoping)`);
+    } else {
+      tools["village_*"] = false;
+      cfg.tools = tools;
+      changed = true;
+      log(`opencode.json: set tools["village_*"] = false (village-only scoping)`);
+    }
+  }
+
+  // permission.skill["village-workflow"] = "deny"
+  const permission = (cfg.permission ?? {}) as Record<string, unknown>;
+  const skill = permission.skill;
+  let nextSkill: Record<string, unknown> | undefined;
+  if (skill === undefined) {
+    nextSkill = { "*": "allow", "village-workflow": "deny" };
+  } else if (typeof skill === "string") {
+    // Flat action shorthand — expand, preserving the user's default.
+    nextSkill = { "*": skill, "village-workflow": "deny" };
+  } else if (
+    typeof skill === "object" &&
+    skill !== null &&
+    !("village-workflow" in (skill as Record<string, unknown>))
+  ) {
+    nextSkill = { ...(skill as Record<string, unknown>), "village-workflow": "deny" };
+  }
+  if (nextSkill) {
+    if (o.dryRun) {
+      log(`opencode.json: would set permission.skill["village-workflow"] = "deny"`);
+    } else {
+      permission.skill = nextSkill;
+      cfg.permission = permission;
+      changed = true;
+      log(`opencode.json: set permission.skill["village-workflow"] = "deny"`);
+    }
+  }
+
+  return changed;
+}
+
 export async function patchConfig(prefix: string, o: PatchConfigOpts): Promise<boolean> {
   const p = join(prefix, "opencode.json");
   let cfg: Record<string, unknown>;
@@ -228,17 +327,18 @@ export async function patchConfig(prefix: string, o: PatchConfigOpts): Promise<b
       cfg = JSON.parse(readFileSync(p, "utf-8")) as Record<string, unknown>;
     } catch {
       warn("Could not parse opencode.json; skipping plugin registration");
+      warn("(note: JSONC comments/trailing commas are not supported by the installer — patch manually)");
       return false;
     }
   } else {
     cfg = { "$schema": "https://opencode.ai/config.json", plugin: [] };
   }
 
-  const arr = Array.isArray(cfg.plugin) ? [...(cfg.plugin as string[])] : [];
+  const arr = Array.isArray(cfg.plugin) ? [...(cfg.plugin as PluginEntry[])] : [];
   let changed = false;
 
   // ── Register @technoch1ef/opencode-village ─────────────────────────
-  if (arr.includes(PLUGIN)) {
+  if (arr.some((e) => entryMatches(e, PLUGIN))) {
     log("\nopencode.json: village plugin already registered");
   } else if (o.dryRun) {
     log(`\nopencode.json: would add "${PLUGIN}" to plugin array`);
@@ -249,18 +349,22 @@ export async function patchConfig(prefix: string, o: PatchConfigOpts): Promise<b
   }
 
   // ── Register @technoch1ef/opencode-beads-rust ──────────────────────
-  if (arr.includes(BEADS_RUST_PLUGIN)) {
+  // Fresh registrations use the tuple form with a village-role `inject`
+  // allowlist so beads context never leaks into build/plan/custom agents.
+  if (arr.some((e) => entryMatches(e, BEADS_RUST_PLUGIN))) {
     log(`\nopencode.json: beads-rust plugin already registered`);
   } else {
-    const hasLegacy = arr.includes(BEADS_LEGACY_PLUGIN);
+    const legacyIdx = arr.findIndex(
+      (e) => entryMatches(e, BEADS_LEGACY_PLUGIN) && !entryMatches(e, BEADS_RUST_PLUGIN),
+    );
+    const hasLegacy = legacyIdx !== -1;
 
     if (hasLegacy && o.force) {
       // --force: replace legacy without prompting
       if (o.dryRun) {
         log(`\nopencode.json: would replace "${BEADS_LEGACY_PLUGIN}" with "${BEADS_RUST_PLUGIN}" (--force)`);
       } else {
-        const idx = arr.indexOf(BEADS_LEGACY_PLUGIN);
-        arr.splice(idx, 1, BEADS_RUST_PLUGIN);
+        arr.splice(legacyIdx, 1, beadsRustEntry());
         changed = true;
         log(`\nopencode.json: replaced "${BEADS_LEGACY_PLUGIN}" with "${BEADS_RUST_PLUGIN}" (--force)`);
       }
@@ -277,8 +381,7 @@ export async function patchConfig(prefix: string, o: PatchConfigOpts): Promise<b
           `  Replace "${BEADS_LEGACY_PLUGIN}" with "${BEADS_RUST_PLUGIN}"?`,
         );
         if (replace) {
-          const idx = arr.indexOf(BEADS_LEGACY_PLUGIN);
-          arr.splice(idx, 1, BEADS_RUST_PLUGIN);
+          arr.splice(legacyIdx, 1, beadsRustEntry());
           changed = true;
           log(`\nopencode.json: replaced "${BEADS_LEGACY_PLUGIN}" with "${BEADS_RUST_PLUGIN}"`);
         } else {
@@ -290,14 +393,17 @@ export async function patchConfig(prefix: string, o: PatchConfigOpts): Promise<b
       if (o.dryRun) {
         log(`\nopencode.json: would add "${BEADS_RUST_PLUGIN}" to plugin array`);
       } else {
-        arr.push(BEADS_RUST_PLUGIN);
+        arr.push(beadsRustEntry());
         changed = true;
-        log(`\nopencode.json: added "${BEADS_RUST_PLUGIN}" to plugin array`);
+        log(`\nopencode.json: added "${BEADS_RUST_PLUGIN}" (inject scoped to village agents) to plugin array`);
       }
     }
   }
 
   cfg.plugin = arr;
+
+  // ── Village-only scoping (tools + skill permission) ────────────────
+  if (ensureVillageScoping(cfg, o)) changed = true;
 
   if (!o.dryRun && changed) {
     mkdirSync(dirname(p), { recursive: true });

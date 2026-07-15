@@ -10,7 +10,10 @@ tools:
   webfetch: false
   skill: true
   task: false
+  "village_*": true
 permission:
+  skill:
+    "village-workflow": allow
   # NOTE: OpenCode resolves bash rules with last-match-wins semantics.
   # Broad denies MUST come before the specific allows that carve exceptions out of them.
   bash:

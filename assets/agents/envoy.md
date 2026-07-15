@@ -12,7 +12,10 @@ tools:
   task: false
   github_*: true
   gh_*: true
+  "village_*": true
 permission:
+  skill:
+    "village-workflow": allow
   # NOTE: OpenCode resolves bash rules with last-match-wins semantics.
   # Broad denies MUST come before the specific allows that carve exceptions out of them.
   bash:
