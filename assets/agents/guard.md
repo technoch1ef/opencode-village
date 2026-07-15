@@ -11,8 +11,24 @@ tools:
   webfetch: false
   task: false
 permission:
+  # NOTE: OpenCode resolves bash rules with last-match-wins semantics.
+  # Broad denies MUST come before the specific allows that carve exceptions out of them.
   bash:
     "*": allow
+    "git push*": deny
+    "git pull*": deny
+    "git fetch*": deny
+    "git checkout -b*": deny
+    "git checkout -B*": deny
+    "git switch -c*": deny
+    "git branch*": deny
+    "git branch --show-current*": allow
+    "git branch --list*": allow
+    "git merge*": deny
+    "git merge-base*": allow
+    "git rebase*": deny
+    "git reset*": deny
+    "gh *": deny
     "git diff*": allow
     "git log*": allow
     "git show*": allow
@@ -46,17 +62,6 @@ permission:
     "cargo fmt*": allow
     "cargo clippy*": allow
     "cargo build*": allow
-    "git push*": deny
-    "git pull*": deny
-    "git fetch*": deny
-    "git checkout -b*": deny
-    "git checkout -B*": deny
-    "git switch -c*": deny
-    "git branch*": deny
-    "git merge*": deny
-    "git rebase*": deny
-    "git reset*": deny
-    "gh *": deny
 ---
 
 # Guard

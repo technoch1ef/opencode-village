@@ -11,25 +11,30 @@ tools:
   skill: true
   task: false
 permission:
+  # NOTE: OpenCode resolves bash rules with last-match-wins semantics.
+  # Broad denies MUST come before the specific allows that carve exceptions out of them.
   bash:
     "*": allow
     "git push*": deny
     "git pull*": deny
+    "git fetch*": deny
     "git fetch origin": allow
     "git fetch origin *": allow
-    "git fetch*": deny
-    "git checkout -b epic/*": allow
-    "git checkout -B epic/*": allow
     "git checkout -b*": deny
     "git checkout -B*": deny
-    "git switch -c epic/*": allow
-    "git switch --create epic/*": allow
+    "git checkout -b epic/*": allow
+    "git checkout -B epic/*": allow
     "git switch -c*": deny
     "git switch --create*": deny
+    "git switch -c epic/*": allow
+    "git switch --create epic/*": allow
     "git branch*": deny
+    "git branch --show-current*": allow
+    "git branch --list*": allow
+    "git merge*": deny
+    "git merge-base*": allow
     "git merge origin/main --ff-only*": allow
     "git merge origin/master --ff-only*": allow
-    "git merge*": deny
     "git rebase*": deny
     "git reset*": deny
     "git add -f*": deny

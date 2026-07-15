@@ -11,6 +11,8 @@ tools:
   edit: false
   task: false
 permission:
+  # NOTE: OpenCode resolves bash rules with last-match-wins semantics.
+  # Broad denies MUST come before the specific allows that carve exceptions out of them.
   bash:
     "*": allow
     "git push*": deny
@@ -20,6 +22,8 @@ permission:
     "git checkout -B*": deny
     "git switch -c*": deny
     "git branch*": deny
+    "git branch --show-current*": allow
+    "git branch --list*": allow
     "git commit*": deny
     "gh *": deny
 ---

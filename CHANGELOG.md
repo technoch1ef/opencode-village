@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.6.5
+
+### Fixed
+
+- **Agent permission rules no longer fight the agents' own prompts**: OpenCode resolves bash permission rules with last-match-wins semantics, but every agent's frontmatter listed specific `allow` carve-outs *before* the broad `deny` rules (`git branch*`, `git merge*`, `git fetch*`, `gh *`) — so the denies always won and the carve-outs were dead rules. In practice this denied the exact read-only commands the prompts instruct the roles to run:
+  - `git branch --show-current` — the orientation step in every role's work loop (blocked ~30×/month in real usage, and it poisoned chained calls like `git status && git branch --show-current`).
+  - `git merge-base` — inspector's documented diff-gathering step (`git diff $(git merge-base HEAD main)..HEAD`), caught by `git merge*`.
+  - `git fetch origin` / `git fetch origin *` — worker's and envoy's read-only remote refresh, caught by `git fetch*`.
+  - `gh pr view*` / `gh pr diff*` / `gh issue*` — inspector's PR review commands, caught by `gh *`.
+  - `git checkout -b epic/*`, `git switch -c epic/*` — worker's allowed epic-branch creation, caught by the generic `-b`/`-c` denies.
+  - `git merge origin/main --ff-only` — worker's allowed fast-forward refresh, caught by `git merge*`.
+
+  All five agent permission blocks (worker, guard, inspector, mayor, envoy) are now ordered least-specific → most-specific so carve-outs actually take precedence, with an inline comment documenting the last-match-wins contract. New explicit read-only allows were added where the corresponding broad deny exists: `git branch --show-current*`, `git branch --list*`, `git merge-base*`.
+
+### Upgrade note
+
+Re-run `npx @technoch1ef/opencode-village@latest init --all --force` to refresh the agent prompts. If you previously hand-patched installed agents to work around denied read-only git/gh commands, the refreshed assets supersede those workarounds.
+
 ## 0.6.4
 
 ### Fixed

@@ -13,6 +13,8 @@ tools:
   github_*: true
   gh_*: true
 permission:
+  # NOTE: OpenCode resolves bash rules with last-match-wins semantics.
+  # Broad denies MUST come before the specific allows that carve exceptions out of them.
   bash:
     "*": allow
     "git push*": allow
@@ -26,14 +28,17 @@ permission:
     "git show*": allow
     "git status*": allow
     "git pull*": deny
+    "git fetch*": deny
     "git fetch origin": allow
     "git fetch origin *": allow
-    "git fetch*": deny
     "git checkout -b*": deny
     "git checkout -B*": deny
     "git switch -c*": deny
     "git branch*": deny
+    "git branch --show-current*": allow
+    "git branch --list*": allow
     "git merge*": deny
+    "git merge-base*": allow
     "git rebase*": deny
     "git reset*": deny
 ---
