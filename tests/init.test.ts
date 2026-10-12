@@ -26,12 +26,14 @@ import {
   entryMatches,
   ensureVillageScoping,
   VILLAGE_AGENT_NAMES,
+  villagePluginSpec,
   type PatchConfigOpts,
   type Opts,
   type PluginEntry,
 } from "../bin/init";
 
 const PLUGIN = "@technoch1ef/opencode-village";
+const VILLAGE_SPEC = villagePluginSpec(); // version-pinned, e.g. @technoch1ef/opencode-village@1.0.0
 const BEADS_RUST_PLUGIN = "@technoch1ef/opencode-beads-rust";
 const BEADS_LEGACY_PLUGIN = "@technoch1ef/opencode-beads";
 
@@ -78,7 +80,7 @@ describe("patchConfig", () => {
 
     expect(changed).toBe(true);
     const plugins = readPlugins(tmpDir);
-    expect(plugins).toContain(PLUGIN);
+    expect(plugins).toContain(VILLAGE_SPEC);
     expect(hasPlugin(plugins, BEADS_RUST_PLUGIN)).toBe(true);
   });
 
@@ -89,7 +91,7 @@ describe("patchConfig", () => {
     await patchConfig(tmpDir, opts);
 
     const plugins = readPlugins(tmpDir);
-    expect(plugins).toContain(PLUGIN);
+    expect(plugins).toContain(VILLAGE_SPEC);
     expect(hasPlugin(plugins, BEADS_RUST_PLUGIN)).toBe(true);
   });
 
@@ -133,9 +135,11 @@ describe("patchConfig", () => {
 
     const changed = await patchConfig(tmpDir, makeOpts({ force: true }));
 
-    expect(changed).toBe(false);
+    // The stale pinned village entry is re-pinned in place, not duplicated.
+    expect(changed).toBe(true);
     const plugins = readPlugins(tmpDir);
     expect(plugins).toHaveLength(2);
+    expect(plugins[0]).toBe(VILLAGE_SPEC);
     // User's existing inject option is preserved untouched
     expect(beadsRustOptions(plugins)?.inject).toEqual(["mayor"]);
   });
@@ -147,7 +151,7 @@ describe("patchConfig", () => {
       JSON.stringify(
         {
           plugin: [
-            PLUGIN,
+            VILLAGE_SPEC,
             ["file:///home/u/Repositories/opencode-beads-rust/src/plugin.ts", { inject: [] }],
           ],
           tools: { "village_*": false },
@@ -162,6 +166,43 @@ describe("patchConfig", () => {
 
     expect(changed).toBe(false);
     expect(readPlugins(tmpDir)).toHaveLength(2);
+  });
+
+  // ── Version pinning ───────────────────────────────────────────────────
+
+  test("registers the village plugin pinned to an explicit version", async () => {
+    await patchConfig(tmpDir, makeOpts({ force: true }));
+
+    const plugins = readPlugins(tmpDir);
+    expect(VILLAGE_SPEC.startsWith(`${PLUGIN}@`)).toBe(true);
+    expect(plugins).toContain(VILLAGE_SPEC);
+    expect(plugins).not.toContain(PLUGIN);
+  });
+
+  test("upgrades a bare village entry to the version-pinned spec", async () => {
+    writeFileSync(
+      join(tmpDir, "opencode.json"),
+      JSON.stringify({ plugin: [PLUGIN, BEADS_RUST_PLUGIN] }, null, 2) + "\n",
+    );
+
+    expect(await patchConfig(tmpDir, makeOpts({ force: true }))).toBe(true);
+    const plugins = readPlugins(tmpDir);
+    expect(plugins).toContain(VILLAGE_SPEC);
+    expect(plugins).not.toContain(PLUGIN);
+    expect(plugins.filter((p) => p === VILLAGE_SPEC)).toHaveLength(1);
+  });
+
+  test("leaves a file-path village entry (local checkout) untouched", async () => {
+    const local = "file:///home/u/Repositories/opencode-village/src/plugin.ts";
+    writeFileSync(
+      join(tmpDir, "opencode.json"),
+      JSON.stringify({ plugin: [local, BEADS_RUST_PLUGIN] }, null, 2) + "\n",
+    );
+
+    await patchConfig(tmpDir, makeOpts({ force: true }));
+    const plugins = readPlugins(tmpDir);
+    expect(plugins).toContain(local);
+    expect(plugins).not.toContain(VILLAGE_SPEC);
   });
 
   // ── Village-only scoping ──────────────────────────────────────────────
@@ -233,7 +274,7 @@ describe("patchConfig", () => {
       cfgPath,
       JSON.stringify(
         {
-          plugin: [PLUGIN, BEADS_RUST_PLUGIN],
+          plugin: [VILLAGE_SPEC, BEADS_RUST_PLUGIN],
           tools: { "village_*": false },
           permission: { skill: { "*": "allow", "village-workflow": "deny" } },
         },
@@ -248,7 +289,7 @@ describe("patchConfig", () => {
     expect(changed).toBe(false);
     // Plugins list is unchanged
     const plugins = readPlugins(tmpDir);
-    expect(plugins).toEqual([PLUGIN, BEADS_RUST_PLUGIN]);
+    expect(plugins).toEqual([VILLAGE_SPEC, BEADS_RUST_PLUGIN]);
   });
 
   // ── Dry-run mode ──────────────────────────────────────────────────────
@@ -305,7 +346,7 @@ describe("patchConfig", () => {
 
     // Village plugin should still be added; beads-rust should not replace legacy
     const plugins = readPlugins(tmpDir);
-    expect(plugins).toContain(PLUGIN);
+    expect(plugins).toContain(VILLAGE_SPEC);
     expect(hasPlugin(plugins, BEADS_LEGACY_PLUGIN)).toBe(true);
     expect(hasPlugin(plugins, BEADS_RUST_PLUGIN)).toBe(false);
     expect(changed).toBe(true); // village was added
@@ -333,7 +374,7 @@ describe("patchConfig", () => {
     const cfgPath = join(tmpDir, "opencode.json");
     writeFileSync(
       cfgPath,
-      JSON.stringify({ plugin: [PLUGIN] }, null, 2) + "\n",
+      JSON.stringify({ plugin: [VILLAGE_SPEC] }, null, 2) + "\n",
     );
 
     const opts = makeOpts({ force: true });
@@ -341,10 +382,10 @@ describe("patchConfig", () => {
 
     expect(changed).toBe(true);
     const plugins = readPlugins(tmpDir);
-    expect(plugins).toContain(PLUGIN);
+    expect(plugins).toContain(VILLAGE_SPEC);
     expect(hasPlugin(plugins, BEADS_RUST_PLUGIN)).toBe(true);
     // No duplicates
-    expect(plugins.filter((p) => p === PLUGIN)).toHaveLength(1);
+    expect(plugins.filter((p) => p === VILLAGE_SPEC)).toHaveLength(1);
   });
 
   test("preserves other plugins already in the array", async () => {
@@ -359,7 +400,7 @@ describe("patchConfig", () => {
 
     const plugins = readPlugins(tmpDir);
     expect(plugins).toContain("some-other-plugin");
-    expect(plugins).toContain(PLUGIN);
+    expect(plugins).toContain(VILLAGE_SPEC);
     expect(hasPlugin(plugins, BEADS_RUST_PLUGIN)).toBe(true);
   });
 
@@ -371,7 +412,7 @@ describe("patchConfig", () => {
     await patchConfig(nestedDir, opts);
 
     const plugins = readPlugins(nestedDir);
-    expect(plugins).toContain(PLUGIN);
+    expect(plugins).toContain(VILLAGE_SPEC);
     expect(hasPlugin(plugins, BEADS_RUST_PLUGIN)).toBe(true);
   });
 });

@@ -31,6 +31,35 @@ const PLUGIN = "@technoch1ef/opencode-village";
 const BEADS_RUST_PLUGIN = "@technoch1ef/opencode-beads-rust";
 const BEADS_LEGACY_PLUGIN = "@technoch1ef/opencode-beads";
 
+// Package root, resolved for both the published (dist/bin/) and source (bin/)
+// layouts — mirrors the ASSETS detection above.
+const PKG_ROOT = existsSync(resolve(SELF, "..", "assets"))
+  ? resolve(SELF, "..")          // source layout: bin/  → ..
+  : resolve(SELF, "..", "..");   // dist layout:   dist/bin/ → ../..
+
+/**
+ * The exact, version-pinned plugin spec to register in opencode.json
+ * (e.g. `@technoch1ef/opencode-village@1.0.0`).
+ *
+ * OpenCode caches plugins by their exact spec string, freezing the resolved
+ * version of a bare/`@latest` entry forever. Pinning the version the package
+ * actually ships ensures every upgrade changes the cache key, so OpenCode
+ * loads the new code instead of a stale cached copy.
+ *
+ * Falls back to the bare plugin name if the version can't be read, so a
+ * malformed package.json never breaks installation.
+ */
+export function villagePluginSpec(): string {
+  try {
+    const { version } = JSON.parse(
+      readFileSync(join(PKG_ROOT, "package.json"), "utf-8"),
+    ) as { version?: string };
+    return version ? `${PLUGIN}@${version}` : PLUGIN;
+  } catch {
+    return PLUGIN;
+  }
+}
+
 /**
  * Village role agent names. Used to scope beads context injection: the
  * beads-rust plugin is registered with an `inject` allowlist so that only
@@ -337,15 +366,30 @@ export async function patchConfig(prefix: string, o: PatchConfigOpts): Promise<b
   const arr = Array.isArray(cfg.plugin) ? [...(cfg.plugin as PluginEntry[])] : [];
   let changed = false;
 
-  // ── Register @technoch1ef/opencode-village ─────────────────────────
-  if (arr.some((e) => entryMatches(e, PLUGIN))) {
-    log("\nopencode.json: village plugin already registered");
+  // ── Register @technoch1ef/opencode-village (version-pinned) ────────
+  // npm entries (bare or pinned) are re-pinned to the current version, keeping
+  // tuple options; file-path entries (local checkouts) are left untouched.
+  const spec = villagePluginSpec();
+  const villageIdx = arr.findIndex((e) => entryMatches(e, PLUGIN));
+  const current = villageIdx === -1 ? undefined : arr[villageIdx];
+  const currentSpec = Array.isArray(current) ? current[0] : current;
+  if (current !== undefined && (currentSpec === spec || !currentSpec?.startsWith(PLUGIN))) {
+    log("\nopencode.json: village plugin already registered at current version");
   } else if (o.dryRun) {
-    log(`\nopencode.json: would add "${PLUGIN}" to plugin array`);
+    log(
+      current !== undefined
+        ? `\nopencode.json: would update village plugin to "${spec}"`
+        : `\nopencode.json: would add "${spec}" to plugin array`,
+    );
   } else {
-    arr.push(PLUGIN);
+    if (current !== undefined) {
+      arr.splice(villageIdx, 1, Array.isArray(current) ? [spec, current[1]] : spec);
+      log(`\nopencode.json: updated village plugin to "${spec}"`);
+    } else {
+      arr.push(spec);
+      log(`\nopencode.json: added "${spec}" to plugin array`);
+    }
     changed = true;
-    log(`\nopencode.json: added "${PLUGIN}" to plugin array`);
   }
 
   // ── Register @technoch1ef/opencode-beads-rust ──────────────────────
