@@ -7,7 +7,7 @@
  * @module
  */
 
-import { tool } from "@opencode-ai/plugin";
+import { tool } from "../lib/tool";
 import type { SessionHelpers } from "../lib/sessions";
 import { getWorktreeMapping } from "../lib/worktree";
 

@@ -19,7 +19,7 @@
  * @module
  */
 
-import { tool } from "@opencode-ai/plugin";
+import { tool } from "../lib/tool";
 import { execFileText } from "../lib/br";
 
 /** Structured result returned by the ensure-branch logic. */

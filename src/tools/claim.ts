@@ -8,7 +8,7 @@
  * @module
  */
 
-import { tool } from "@opencode-ai/plugin";
+import { tool } from "../lib/tool";
 import { execBrJson, formatIssueLine } from "../lib/br";
 import type { SessionHelpers } from "../lib/sessions";
 import {

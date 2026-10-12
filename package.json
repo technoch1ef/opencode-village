@@ -1,6 +1,6 @@
 {
   "name": "@technoch1ef/opencode-village",
-  "version": "0.7.0",
+  "version": "1.0.0",
   "type": "module",
   "description": "Agentic Village workflow plugin for OpenCode — role-driven agents (mayor/worker/inspector/guard/envoy) backed by beads.",
   "main": "./dist/plugin.js",
@@ -29,8 +29,7 @@
     "test": "bun test"
   },
   "peerDependencies": {
-    "@technoch1ef/opencode-beads-rust": ">=0.1.0",
-    "@opencode-ai/plugin": ">=1.14"
+    "@technoch1ef/opencode-beads-rust": ">=1.0.0"
   },
   "peerDependenciesMeta": {
     "@technoch1ef/opencode-beads-rust": {
@@ -38,7 +37,7 @@
     }
   },
   "devDependencies": {
-    "@opencode-ai/plugin": "^1.14",
+    "@opencode-ai/plugin": "0.0.0-beta-19271",
     "@types/bun": "latest",
     "typescript": "^5.8"
   },
@@ -60,5 +59,8 @@
     "village",
     "beads",
     "workflow"
-  ]
+  ],
+  "dependencies": {
+    "zod": "^4"
+  }
 }

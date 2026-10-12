@@ -13,5 +13,4 @@ export type { Specialist } from "./invoke";
 export { createLintTool } from "./lint";
 export { createScaffoldTool, isStructuredBody, renderScaffoldDescription, parseSkillsFromBody, injectSkillsIntoBody } from "./scaffold";
 export { createOrphansTool } from "./orphans";
-export { createStatusTool } from "./status";
 export { createWorktreesTool } from "./worktrees";

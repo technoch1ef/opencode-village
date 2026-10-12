@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.0.0
+
+### Breaking
+
+- **OpenCode v2 only.** The plugin now exports a v2 definition (`{ id: "village", setup }`) and registers its tools via `ctx.tool.transform`. It no longer loads on OpenCode 1.x — stay on `0.7.x` there.
+- **Removed `village_status`**: v2 plugins cannot list child sessions.
+- **Removed `BD_ACTOR` injection into shell commands** (`shell.env`): v2 shell hooks carry no agent context. `village_*` tools still set the actor; raw `br` calls from agents no longer do.
+- **Removed toasts** for village session errors/idle transitions and the shell-snippet `\n` fix (`experimental.text.complete`): no v2 server-plugin equivalents.
+
+### Changed
+
+- `init` registers the village plugin pinned to the installed version (`@technoch1ef/opencode-village@1.0.0`), re-pinning existing npm entries in place, so OpenCode's spec-keyed plugin cache picks up upgrades. File-path entries are left untouched.
+- Village tools are registered with `codemode: false`, so agents call them directly under their existing `village_*` names.
+- Tool arguments use `zod` 4 (now a runtime dependency); `@opencode-ai/plugin` is a type-only dev dependency.
+
 ## 0.7.0
 
 ### Changed

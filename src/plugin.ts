@@ -1,19 +1,17 @@
 /**
- * OpenCode Village Plugin
+ * OpenCode Village Plugin (OpenCode v2 plugin API)
  *
  * Enables a lightweight "Agentic Village" workflow.
  *
  * Features:
- * - Injects BD_ACTOR environment variable based on current agent
- * - Provides tools: village_board, village_claim, village_ensure_branch, village_handoff, village_invoke, village_lint, village_scaffold, village_orphans, village_status, village_worktrees
- * - Monitors village session errors and status transitions
+ * - Provides tools: village_board, village_claim, village_ensure_branch, village_handoff, village_invoke, village_lint, village_scaffold, village_orphans, village_worktrees
  */
 
 import type { Plugin } from "@opencode-ai/plugin";
-import { AGENT_TO_ACTOR } from "./lib/br";
+import { z } from "zod";
 import { startBrPreflight, withBrPreflight } from "./lib/preflight";
 import { createSessionHelpers } from "./lib/sessions";
-import { fixShellSnippetNewlines } from "./lib/shared";
+import type { ToolDefinition } from "./lib/tool";
 import { createBoardTool } from "./tools/board";
 import { createClaimTool } from "./tools/claim";
 import { createEnsureBranchTool } from "./tools/ensure-branch";
@@ -22,116 +20,54 @@ import { createInvokeTool } from "./tools/invoke";
 import { createLintTool } from "./tools/lint";
 import { createOrphansTool } from "./tools/orphans";
 import { createScaffoldTool } from "./tools/scaffold";
-import { createStatusTool } from "./tools/status";
 import { createWorktreesTool } from "./tools/worktrees";
 
-/**
- * Create the village event handler for session error/status monitoring.
- */
-function createEventHandler(helpers: ReturnType<typeof createSessionHelpers>) {
-  return async ({ event }: { event: { type: string; properties?: any } }) => {
-    const properties = (event.properties ?? {}) as any;
+const VillagePlugin: Plugin.Plugin = {
+  id: "village",
+  async setup(ctx) {
+    const helpers = createSessionHelpers(ctx.session);
 
-    const sessionID =
-      typeof properties.sessionID === "string"
-        ? properties.sessionID
-        : typeof properties.id === "string"
-          ? properties.id
-          : undefined;
-    if (!sessionID) return;
+    // Fire-and-forget `br --version` preflight check.
+    // On failure, a single warning is written to stderr and all village_* tools
+    // will return a clear error instead of crashing with cryptic ENOENT messages.
+    void startBrPreflight();
 
-    if (event.type === "session.error") {
-      const session = await helpers.getVillageSessionSummary(sessionID);
-      if (!session) return;
+    const tools: Record<string, ToolDefinition<any>> = {
+      village_board: createBoardTool(helpers),
+      village_claim: createClaimTool(helpers),
+      village_ensure_branch: createEnsureBranchTool(),
+      village_handoff: createHandoffTool(helpers),
+      village_invoke: createInvokeTool(helpers),
+      village_lint: createLintTool(helpers),
+      village_scaffold: createScaffoldTool(helpers),
+      village_orphans: createOrphansTool(helpers),
+      village_worktrees: createWorktreesTool(helpers),
+    };
 
-      const errorText =
-        typeof properties.error === "string"
-          ? properties.error
-          : typeof properties.message === "string"
-            ? properties.message
-            : typeof properties.error?.message === "string"
-              ? properties.error.message
-              : "Unknown error";
-
-      const dedupeKey = `${session.id}:${errorText}`;
-      if (helpers.seenErrorKeys.has(dedupeKey)) return;
-      helpers.seenErrorKeys.add(dedupeKey);
-
-      await helpers.showVillageToast({
-        sessionID,
-        title: "Village session error",
-        message: `${session.title} (${session.id}) failed: ${errorText}`,
-        variant: "error",
-        duration: 5000,
-      });
-      return;
-    }
-
-    if (event.type === "session.status") {
-      const session = await helpers.getVillageSessionSummary(sessionID);
-      if (!session) return;
-
-      const status =
-        typeof properties.status === "string"
-          ? properties.status
-          : typeof properties.next === "string"
-            ? properties.next
-            : undefined;
-      if (!status) return;
-
-      const previous = helpers.lastVillageStatus.get(sessionID);
-      if (previous === status) return;
-      helpers.lastVillageStatus.set(sessionID, status);
-
-      if (previous === "running" && status === "idle") {
-        await helpers.showVillageToast({
-          sessionID,
-          title: "Village session idle",
-          message: `${session.title} (${session.id}) is now idle`,
-          variant: "info",
-          duration: 2500,
+    const registration = await ctx.tool.transform((editor) => {
+      for (const [name, def] of Object.entries(tools)) {
+        const wrapped = withBrPreflight(def);
+        editor.add({
+          name,
+          description: def.description,
+          input: z.object(def.args),
+          // Agent prompts call village_* tools directly, not through code mode.
+          options: { codemode: false },
+          async execute(input, context) {
+            const session = await helpers.getSession(context.sessionID);
+            const content = await wrapped.execute(input, {
+              sessionID: context.sessionID,
+              agent: context.agent,
+              directory: session?.location?.directory ?? ctx.location.directory,
+            });
+            return { content: String(content) };
+          },
         });
       }
-    }
-  };
-}
+    });
 
-const VillagePlugin: Plugin = async ({ client }) => {
-  const helpers = createSessionHelpers(client);
-
-  // Fire-and-forget `br --version` preflight check.
-  // On failure, a single warning is written to stderr and all village_* tools
-  // will return a clear error instead of crashing with cryptic ENOENT messages.
-  void startBrPreflight();
-
-  return {
-    "shell.env": async (input, output) => {
-      const agent = (input as any).agent;
-      if (agent && AGENT_TO_ACTOR[agent]) {
-        output.env.BD_ACTOR = AGENT_TO_ACTOR[agent];
-      }
-    },
-
-    "experimental.text.complete": async (_input, output) => {
-      const fixed = fixShellSnippetNewlines(output.text);
-      if (typeof fixed === "string") output.text = fixed;
-    },
-
-    tool: {
-      village_board: withBrPreflight(createBoardTool(helpers)),
-      village_claim: withBrPreflight(createClaimTool(helpers)),
-      village_ensure_branch: withBrPreflight(createEnsureBranchTool()),
-      village_handoff: withBrPreflight(createHandoffTool(helpers)),
-      village_invoke: withBrPreflight(createInvokeTool(helpers)),
-      village_lint: withBrPreflight(createLintTool(helpers)),
-      village_scaffold: withBrPreflight(createScaffoldTool(helpers)),
-      village_orphans: withBrPreflight(createOrphansTool(helpers)),
-      village_status: withBrPreflight(createStatusTool(helpers)),
-      village_worktrees: withBrPreflight(createWorktreesTool(helpers)),
-    },
-
-    event: createEventHandler(helpers),
-  };
+    return () => registration.dispose();
+  },
 };
 
 export default VillagePlugin;

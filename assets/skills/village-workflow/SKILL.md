@@ -62,7 +62,6 @@ The mayor never claims; the envoy is dispatched explicitly via `village_invoke` 
 | `village_ensure_branch` | Create or fast-forward an `epic/*` branch from the default base. |
 | `village_invoke` | Dispatch a bead to a specialist (envoy). |
 | `village_orphans` | Report and auto-assign orphan/suspect-assignee beads. |
-| `village_status` | List village sessions under the current root session. |
 | `village_worktrees` | Show the current worktree → bead mapping. |
 
 ## Commit hygiene

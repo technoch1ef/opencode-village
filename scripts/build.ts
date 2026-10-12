@@ -7,7 +7,7 @@
  * JS emission is split into three bun build calls so each output is
  * separately optimised, and the "exports" map can resolve all entries:
  *
- *   bun build src/plugin.ts   → dist/plugin.js        (bundled; @opencode-ai/plugin external)
+ *   bun build src/plugin.ts   → dist/plugin.js        (bundled; zod external)
  *   bun build src/lib/shared.ts → dist/lib/shared.js  (needed for exports map "./lib/shared" entry)
  *   bun build bin/init.ts     → dist/bin/init.js       (CLI binary)
  *
@@ -36,7 +36,7 @@ await $`rm -rf dist`;
 // ── JS: plugin (bundled, peer dep kept external) ─────────────────────────
 
 step("bun build src/plugin.ts → dist/plugin.js");
-await $`bun build src/plugin.ts --target=node --outdir=dist --format=esm --external @opencode-ai/plugin`;
+await $`bun build src/plugin.ts --target=node --outdir=dist --format=esm --external zod`;
 
 // ── JS: lib/shared (separate entry required by "exports" map) ────────────
 

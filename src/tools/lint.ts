@@ -7,7 +7,7 @@
  * @module
  */
 
-import { tool } from "@opencode-ai/plugin";
+import { tool } from "../lib/tool";
 import { execBrJson } from "../lib/br";
 import {
   defaultSkillRegistryPaths,

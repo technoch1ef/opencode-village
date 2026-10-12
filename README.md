@@ -4,6 +4,7 @@ Role-driven "Agentic Village" workflow for [OpenCode](https://opencode.ai) — a
 
 ## Requirements
 
+- OpenCode v2 (plugin API `@opencode-ai/plugin` 2.x / current beta). For OpenCode 1.x, use `@technoch1ef/opencode-village@0.7`.
 - [`beads_rust`](https://github.com/Dicklesworthstone/beads_rust) installed (the plugin uses it as its backing store)
 - [`@technoch1ef/opencode-beads-rust`](https://www.npmjs.com/package/@technoch1ef/opencode-beads-rust) plugin installed in OpenCode
 - Node >= 20
@@ -51,7 +52,6 @@ The plugin exposes all village operations as `village_*` tools. Agents and skill
 | `village_ensure_branch` | Create or checkout an `epic/*` branch, fast-forward from base |
 | `village_invoke` | Dispatch a bead to a specialist (e.g. envoy) for processing |
 | `village_orphans` | Report and fix orphan/suspect-assignee beads (always auto-assigns) |
-| `village_status` | List village sessions under the current root session |
 | `village_worktrees` | List the current worktree-to-bead mapping for all in-progress beads |
 
 ## Skills

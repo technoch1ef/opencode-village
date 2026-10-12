@@ -24,7 +24,7 @@
  * @module
  */
 
-import { tool } from "@opencode-ai/plugin";
+import { tool } from "../lib/tool";
 import { execBrJson, execFileText, formatIssueLine } from "../lib/br";
 import type { SessionHelpers } from "../lib/sessions";
 import type { BrIssue } from "../lib/shared";
@@ -46,7 +46,6 @@ export const VILLAGE_ROLES: ReadonlySet<string> = new Set<VillageRole>([
  *
  * Session titles follow patterns like `village-worker-bd-2kk9.11`,
  * `village-inspector`, `village-guard-check`, etc.
- * (see {@link import("../lib/sessions").isVillageSessionTitle}).
  *
  * Iterates over {@link VILLAGE_ROLES} and returns the first match
  * where the title starts with `village-<role>-` or equals `village-<role>`.
