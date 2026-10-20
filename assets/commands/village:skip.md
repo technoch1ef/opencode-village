@@ -1,3 +1,7 @@
+---
+agent: mayor
+---
+
 # /village:skip
 
 Skip the current in-progress bead one step forward in the village chain.

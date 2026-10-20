@@ -77,8 +77,11 @@ export function inferRoleFromTitle(
  * | worker     | guard, mayor                |
  * | guard      | inspector, worker           |
  * | inspector  | worker, mayor, envoy        |
- * | mayor      | worker                      |
+ * | mayor      | worker, guard, inspector    |
  * | envoy      | (none)                      |
+ *
+ * Mayor orchestrates the chain, so it may route a bead to any step
+ * (e.g. `/village:skip`, or resuming a bead after the human decides).
  */
 export const HANDOFF_MATRIX: Readonly<
   Record<VillageRole, ReadonlySet<VillageRole>>
@@ -86,7 +89,7 @@ export const HANDOFF_MATRIX: Readonly<
   worker: new Set(["guard", "mayor"]),
   guard: new Set(["inspector", "worker"]),
   inspector: new Set(["worker", "mayor", "envoy"]),
-  mayor: new Set(["worker"]),
+  mayor: new Set(["worker", "guard", "inspector"]),
   envoy: new Set(),
 };
 

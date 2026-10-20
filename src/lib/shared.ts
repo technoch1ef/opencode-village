@@ -11,6 +11,7 @@ export type BrIssue = {
   issue_type?: string;
   description?: string;
   notes?: string;
+  dependents?: Array<{ id: string; dependency_type?: string }>;
 };
 
 export function compareBrIssuesDeterministic(a: BrIssue, b: BrIssue): number {

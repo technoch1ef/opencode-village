@@ -20,7 +20,7 @@ All slash commands are namespaced under `/village:`:
 
 | Command | Description |
 |---------|-------------|
-| `/village:work` | Trigger the work loop for the current agent's role |
+| `/village:work [epic]` | Mayor runs worker/guard/inspector until the work is done |
 | `/village:board` | Show a read-only at-a-glance view of village state |
 | `/village:envoy` | Dispatch envoy to push a branch and open a PR |
 | `/village:orphans` | Report and fix unassigned beads |
@@ -37,14 +37,15 @@ Running the workflow
 
 1. Start OpenCode in your project repo and use `mayor`.
 2. Mayor clarifies scope, drafts an epic + child beads, and creates them via `village_scaffold`.
-3. Navigate to worker/guard/inspector sessions: `ctrl+x right/left` (cycle children) and `ctrl+x up` (back to parent). Run `/village:work` to start.
+3. In the same mayor session, run `/village:work` (optionally naming an epic). Mayor launches worker, guard and inspector as foreground subagents, one bead at a time, until no work is left. Inspect a subagent's session with `ctrl+x right/left` (cycle children) and `ctrl+x up` (back to parent).
 4. Worker implements, commits locally, then hands off to guard via `village_handoff`.
 5. Guard runs checks (tests/linters/build) and hands off to inspector (green) or returns to worker (red).
 6. Inspector reviews read-only — verifies AC coverage, scope, regressions — then closes the bead or returns it.
+   When a bead is returned to mayor, mayor asks you how to proceed.
 7. Optionally, envoy pushes branches and opens PRs via `/village:envoy`.
 
 Notes
 
-- Mayor never makes code/config/doc changes; it only creates beads.
+- Mayor never makes code/config/doc changes; it creates beads and delegates the work to subagents.
 - Spawning multiple workers in the same git working directory can cause conflicts.
 - Always claim work via `village_claim` (enforces at most 1 in_progress bead per assignee).

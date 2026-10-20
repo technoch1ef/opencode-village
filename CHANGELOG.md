@@ -1,5 +1,25 @@
 # Changelog
 
+## 1.1.0
+
+### Changed
+
+- **Mayor runs the whole chain.** Plan the epic with mayor, then run `/village:work` in the same session: mayor launches worker, guard and inspector as foreground subagents, one bead at a time, until no ready work is left. It asks you (question tool) only when a bead is returned to it. Pass an epic in the request (`/village:work pick up bd-1f2g3`) to scope the run; otherwise all ready work is picked up. Envoy never runs automatically.
+- **Manual per-role flow removed.** Worker, guard, inspector and envoy are now `mode: subagent`; each run processes exactly one bead and returns `<bead-id>: <outcome>`. They cannot ask the user questions.
+- **Agent frontmatter migrated to OpenCode v2** (`mode` + ordered `permissions` list; `bash` → `shell`, `task` → `subagent`). Mayor may launch worker/guard/inspector; launching envoy asks first.
+- All `/village:*` commands select their agent (`mayor`, or `envoy` for `/village:envoy`), so they work from any session.
+- `village_handoff`: mayor may hand off to worker, guard or inspector (needed for `/village:skip` and resuming returned beads).
+- `village_claim` accepts an optional `epic` argument to claim only that epic's children.
+
+### Fixed
+
+- `village_board { epic }` now scopes to the epic's children (it called `br children`, which `br` does not have, and silently showed every bead).
+- Village agents failed with "Agent … cannot run as a subagent" on OpenCode v2 (no `mode` → `primary`).
+
+### Upgrade note
+
+Re-run `npx @technoch1ef/opencode-village@latest init --all --force` to refresh agents and commands. If you customized agent files, port your changes to the v2 `permissions` format.
+
 ## 1.0.0
 
 ### Breaking

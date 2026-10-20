@@ -1,49 +1,40 @@
 ---
 description: "Village envoy - outward-facing diplomat: pushes branches, opens PRs, interacts with GitHub"
-tools:
-  bash: true
-  read: true
-  glob: true
-  grep: true
-  skill: true
-  write: false
-  edit: false
-  webfetch: false
-  task: false
-  github_*: true
-  gh_*: true
-  "village_*": true
-permission:
-  skill:
-    "village-workflow": allow
-  # NOTE: OpenCode resolves bash rules with last-match-wins semantics.
-  # Broad denies MUST come before the specific allows that carve exceptions out of them.
-  bash:
-    "*": allow
-    "git push*": allow
-    "git push --force*": deny
-    "git push -f*": deny
-    "git push origin --force*": deny
-    "git push origin -f*": deny
-    "gh *": allow
-    "git diff*": allow
-    "git log*": allow
-    "git show*": allow
-    "git status*": allow
-    "git pull*": deny
-    "git fetch*": deny
-    "git fetch origin": allow
-    "git fetch origin *": allow
-    "git checkout -b*": deny
-    "git checkout -B*": deny
-    "git switch -c*": deny
-    "git branch*": deny
-    "git branch --show-current*": allow
-    "git branch --list*": allow
-    "git merge*": deny
-    "git merge-base*": allow
-    "git rebase*": deny
-    "git reset*": deny
+mode: subagent
+permissions:
+  # Last matching rule wins: broad rules first, exceptions after.
+  - { action: edit, resource: "*", effect: deny }
+  - { action: webfetch, resource: "*", effect: deny }
+  - { action: subagent, resource: "*", effect: deny }
+  - { action: "github_*", resource: "*", effect: allow }
+  - { action: "gh_*", resource: "*", effect: allow }
+  - { action: "village_*", resource: "*", effect: allow }
+  - { action: skill, resource: "village-workflow", effect: allow }
+  - { action: shell, resource: "*", effect: allow }
+  - { action: shell, resource: "git push*", effect: allow }
+  - { action: shell, resource: "git push --force*", effect: deny }
+  - { action: shell, resource: "git push -f*", effect: deny }
+  - { action: shell, resource: "git push origin --force*", effect: deny }
+  - { action: shell, resource: "git push origin -f*", effect: deny }
+  - { action: shell, resource: "gh *", effect: allow }
+  - { action: shell, resource: "git diff*", effect: allow }
+  - { action: shell, resource: "git log*", effect: allow }
+  - { action: shell, resource: "git show*", effect: allow }
+  - { action: shell, resource: "git status*", effect: allow }
+  - { action: shell, resource: "git pull*", effect: deny }
+  - { action: shell, resource: "git fetch*", effect: deny }
+  - { action: shell, resource: "git fetch origin", effect: allow }
+  - { action: shell, resource: "git fetch origin *", effect: allow }
+  - { action: shell, resource: "git checkout -b*", effect: deny }
+  - { action: shell, resource: "git checkout -B*", effect: deny }
+  - { action: shell, resource: "git switch -c*", effect: deny }
+  - { action: shell, resource: "git branch*", effect: deny }
+  - { action: shell, resource: "git branch --show-current*", effect: allow }
+  - { action: shell, resource: "git branch --list*", effect: allow }
+  - { action: shell, resource: "git merge*", effect: deny }
+  - { action: shell, resource: "git merge-base*", effect: allow }
+  - { action: shell, resource: "git rebase*", effect: deny }
+  - { action: shell, resource: "git reset*", effect: deny }
 ---
 
 # Envoy

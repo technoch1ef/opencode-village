@@ -26,7 +26,9 @@ Every implementation bead must include these sections (validated by `village_lin
 
 ## Roles
 
-- **Mayor** — research, ask clarifying questions, draft an epic + child beads (each with `## Skills`), create them via `village_scaffold`. No code changes.
+- **Mayor** — research, ask clarifying questions, draft an epic + child beads (each with `## Skills`), create them via `village_scaffold`. On `/village:work`, runs worker/guard/inspector as foreground subagents, one bead at a time, until the work is done. No code changes.
+Worker, guard and inspector run as mayor's subagents: each run processes exactly one bead and returns one line (`<bead-id>: <outcome>`).
+
 - **Worker** — implement exactly what the bead asks for, make local commits, hand off to guard. No tests, no pushes.
 - **Guard** — run linters/tests/build/coverage. Hand off to inspector on green or back to worker on red. No edits.
 - **Inspector** — read-only judgment: AC coverage, scope, regression sniff. Close the bead on approval or return to worker.
@@ -45,6 +47,7 @@ All transitions go through plugin tools. Use `blocked` only when genuinely block
 | inspector → worker (changes requested) | `village_handoff { to: "worker" }` |
 | inspector → mayor (out of scope) | `village_handoff { to: "mayor" }` |
 | inspector → envoy (PR requested) | `village_handoff { to: "envoy" }` |
+| mayor → worker / guard / inspector (after the human decides) | `village_handoff` |
 | inspector → close (approval) | terminal close on the bead |
 | envoy → close (after merge) | terminal close on the bead |
 

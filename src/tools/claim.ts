@@ -158,6 +158,7 @@ export function createClaimTool(helpers: SessionHelpers) {
         .enum(["worker", "inspector", "guard", "envoy"] as const)
         .optional(),
       directory: tool.schema.string().optional(),
+      epic: tool.schema.string().optional(),
     },
     async execute(args, context) {
       const directory = args.directory ?? context.directory;
@@ -243,7 +244,13 @@ export function createClaimTool(helpers: SessionHelpers) {
       }
 
       const ready = (await execBrJson<BrIssue[]>(
-        ["ready", "--assignee", assignee, "--json"],
+        [
+          "ready",
+          "--assignee",
+          assignee,
+          ...(args.epic ? ["--parent", args.epic, "--recursive", "--limit", "0"] : []),
+          "--json",
+        ],
         { cwd: directory, actor: assignee },
       )) as BrIssue[];
 

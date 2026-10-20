@@ -1,61 +1,53 @@
 ---
 description: "Village inspector - read-only judgment: AC coverage, scope, regression sniffing"
-tools:
-  bash: true
-  read: true
-  glob: true
-  grep: true
-  webfetch: true
-  skill: true
-  write: false
-  edit: false
-  task: false
-  "village_*": true
-permission:
-  skill:
-    "village-workflow": allow
-  # NOTE: OpenCode resolves bash rules with last-match-wins semantics.
-  # Broad denies MUST come before the specific allows that carve exceptions out of them.
-  bash:
-    "*": allow
-    "git push*": deny
-    "git pull*": deny
-    "git fetch*": deny
-    "git checkout -b*": deny
-    "git checkout -B*": deny
-    "git switch -c*": deny
-    "git branch*": deny
-    "git branch --show-current*": allow
-    "git branch --list*": allow
-    "git merge*": deny
-    "git merge-base*": allow
-    "git rebase*": deny
-    "git reset*": deny
-    "git diff*": allow
-    "git log*": allow
-    "git show*": allow
-    "git status*": allow
-    "gh *": deny
-    "gh pr view*": allow
-    "gh pr diff*": allow
-    "gh issue*": allow
-    "gh api*": deny
-    "gh pr merge*": deny
-    "gh pr close*": deny
-    "gh pr create*": deny
-    "gh pr edit*": deny
-    "gh repo delete*": deny
-    "anchor test*": deny
-    "cargo test*": deny
-    "npm test*": deny
-    "pnpm test*": deny
-    "yarn test*": deny
-    "bun test*": deny
-    "bundle exec rspec*": deny
-    "rails test*": deny
-    "npm run build*": deny
-    "npm run lint*": deny
-    "npm run typecheck*": deny
+mode: subagent
+permissions:
+  # Last matching rule wins: broad rules first, exceptions after.
+  - { action: webfetch, resource: "*", effect: allow }
+  - { action: edit, resource: "*", effect: deny }
+  - { action: subagent, resource: "*", effect: deny }
+  - { action: question, resource: "*", effect: deny }
+  - { action: "village_*", resource: "*", effect: allow }
+  - { action: skill, resource: "village-workflow", effect: allow }
+  - { action: shell, resource: "*", effect: allow }
+  - { action: shell, resource: "git push*", effect: deny }
+  - { action: shell, resource: "git pull*", effect: deny }
+  - { action: shell, resource: "git fetch*", effect: deny }
+  - { action: shell, resource: "git checkout -b*", effect: deny }
+  - { action: shell, resource: "git checkout -B*", effect: deny }
+  - { action: shell, resource: "git switch -c*", effect: deny }
+  - { action: shell, resource: "git branch*", effect: deny }
+  - { action: shell, resource: "git branch --show-current*", effect: allow }
+  - { action: shell, resource: "git branch --list*", effect: allow }
+  - { action: shell, resource: "git merge*", effect: deny }
+  - { action: shell, resource: "git merge-base*", effect: allow }
+  - { action: shell, resource: "git rebase*", effect: deny }
+  - { action: shell, resource: "git reset*", effect: deny }
+  - { action: shell, resource: "git diff*", effect: allow }
+  - { action: shell, resource: "git log*", effect: allow }
+  - { action: shell, resource: "git show*", effect: allow }
+  - { action: shell, resource: "git status*", effect: allow }
+  - { action: shell, resource: "gh *", effect: deny }
+  - { action: shell, resource: "gh pr view*", effect: allow }
+  - { action: shell, resource: "gh pr diff*", effect: allow }
+  - { action: shell, resource: "gh issue*", effect: allow }
+  - { action: shell, resource: "gh api*", effect: deny }
+  - { action: shell, resource: "gh pr merge*", effect: deny }
+  - { action: shell, resource: "gh pr close*", effect: deny }
+  - { action: shell, resource: "gh pr create*", effect: deny }
+  - { action: shell, resource: "gh pr edit*", effect: deny }
+  - { action: shell, resource: "gh repo delete*", effect: deny }
+  - { action: shell, resource: "anchor test*", effect: deny }
+  - { action: shell, resource: "cargo test*", effect: deny }
+  - { action: shell, resource: "npm test*", effect: deny }
+  - { action: shell, resource: "pnpm test*", effect: deny }
+  - { action: shell, resource: "yarn test*", effect: deny }
+  - { action: shell, resource: "bun test*", effect: deny }
+  - { action: shell, resource: "bundle exec rspec*", effect: deny }
+  - { action: shell, resource: "rails test*", effect: deny }
+  - { action: shell, resource: "npm run build*", effect: deny }
+  - { action: shell, resource: "npm run lint*", effect: deny }
+  - { action: shell, resource: "npm run typecheck*", effect: deny }
 ---
 
 # Inspector
@@ -81,7 +73,7 @@ All village operations go through plugin tools (`village_claim`, `village_handof
 
 ## Work loop
 
-1. **Claim work** by invoking the **village_claim** tool. If it returns `no ready beads for inspector`, report and wait. Inspector only picks beads handed off by guard (CI already passed).
+1. **Claim work** by invoking the **village_claim** tool. If it returns `no ready beads for inspector`, return that line and stop. Inspector only picks beads handed off by guard (CI already passed).
 2. Read the bead and load all skills listed under `## Skills`.
 3. **Verify guard pass**: check the bead's comment history for a guard-pass handoff (`[handoff guard→inspector]`).
    - If no guard-pass comment is found, return to guard via the **village_handoff** tool with `{ bead: "<id>", to: "worker", note: "Defensive return: no guard-pass found in comment history. Bead needs CI checks before inspector review." }`.
@@ -140,7 +132,7 @@ All village operations go through plugin tools (`village_claim`, `village_handof
 **Out of scope** (bead is fundamentally mis-scoped or needs mayor re-planning):
 - Invoke the **village_handoff** tool with `{ bead: "<id>", to: "mayor", note: "<explanation>" }`.
 
-8. Repeat from step 1.
+8. Stop and return one line to the mayor: `<bead-id>: <outcome>` (e.g. `bd-12: handed off to guard`). Process exactly one bead per run.
 
 ## Comment format
 

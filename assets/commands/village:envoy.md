@@ -1,3 +1,7 @@
+---
+agent: envoy
+---
+
 # /village:envoy
 
 Dispatch the envoy to push a branch and open a PR for a bead or epic.

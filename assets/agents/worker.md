@@ -1,56 +1,47 @@
 ---
 description: "Village worker - implements assigned beads only (no pushes, no tests)"
-tools:
-  bash: true
-  read: true
-  write: true
-  edit: true
-  glob: true
-  grep: true
-  webfetch: false
-  skill: true
-  task: false
-  "village_*": true
-permission:
-  skill:
-    "village-workflow": allow
-  # NOTE: OpenCode resolves bash rules with last-match-wins semantics.
-  # Broad denies MUST come before the specific allows that carve exceptions out of them.
-  bash:
-    "*": allow
-    "git push*": deny
-    "git pull*": deny
-    "git fetch*": deny
-    "git fetch origin": allow
-    "git fetch origin *": allow
-    "git checkout -b*": deny
-    "git checkout -B*": deny
-    "git checkout -b epic/*": allow
-    "git checkout -B epic/*": allow
-    "git switch -c*": deny
-    "git switch --create*": deny
-    "git switch -c epic/*": allow
-    "git switch --create epic/*": allow
-    "git branch*": deny
-    "git branch --show-current*": allow
-    "git branch --list*": allow
-    "git merge*": deny
-    "git merge-base*": allow
-    "git merge origin/main --ff-only*": allow
-    "git merge origin/master --ff-only*": allow
-    "git rebase*": deny
-    "git reset*": deny
-    "git add -f*": deny
-    "git add --force*": deny
-    "git add .beads*": deny
-    "gh *": deny
-    "cargo test*": deny
-    "npm test*": deny
-    "pnpm test*": deny
-    "yarn test*": deny
-    "bun test*": deny
-    "bundle exec rspec*": deny
-    "rails test*": deny
+mode: subagent
+permissions:
+  # Last matching rule wins: broad rules first, exceptions after.
+  - { action: webfetch, resource: "*", effect: deny }
+  - { action: subagent, resource: "*", effect: deny }
+  - { action: question, resource: "*", effect: deny }
+  - { action: "village_*", resource: "*", effect: allow }
+  - { action: skill, resource: "village-workflow", effect: allow }
+  - { action: shell, resource: "*", effect: allow }
+  - { action: shell, resource: "git push*", effect: deny }
+  - { action: shell, resource: "git pull*", effect: deny }
+  - { action: shell, resource: "git fetch*", effect: deny }
+  - { action: shell, resource: "git fetch origin", effect: allow }
+  - { action: shell, resource: "git fetch origin *", effect: allow }
+  - { action: shell, resource: "git checkout -b*", effect: deny }
+  - { action: shell, resource: "git checkout -B*", effect: deny }
+  - { action: shell, resource: "git checkout -b epic/*", effect: allow }
+  - { action: shell, resource: "git checkout -B epic/*", effect: allow }
+  - { action: shell, resource: "git switch -c*", effect: deny }
+  - { action: shell, resource: "git switch --create*", effect: deny }
+  - { action: shell, resource: "git switch -c epic/*", effect: allow }
+  - { action: shell, resource: "git switch --create epic/*", effect: allow }
+  - { action: shell, resource: "git branch*", effect: deny }
+  - { action: shell, resource: "git branch --show-current*", effect: allow }
+  - { action: shell, resource: "git branch --list*", effect: allow }
+  - { action: shell, resource: "git merge*", effect: deny }
+  - { action: shell, resource: "git merge-base*", effect: allow }
+  - { action: shell, resource: "git merge origin/main --ff-only*", effect: allow }
+  - { action: shell, resource: "git merge origin/master --ff-only*", effect: allow }
+  - { action: shell, resource: "git rebase*", effect: deny }
+  - { action: shell, resource: "git reset*", effect: deny }
+  - { action: shell, resource: "git add -f*", effect: deny }
+  - { action: shell, resource: "git add --force*", effect: deny }
+  - { action: shell, resource: "git add .beads*", effect: deny }
+  - { action: shell, resource: "gh *", effect: deny }
+  - { action: shell, resource: "cargo test*", effect: deny }
+  - { action: shell, resource: "npm test*", effect: deny }
+  - { action: shell, resource: "pnpm test*", effect: deny }
+  - { action: shell, resource: "yarn test*", effect: deny }
+  - { action: shell, resource: "bun test*", effect: deny }
+  - { action: shell, resource: "bundle exec rspec*", effect: deny }
+  - { action: shell, resource: "rails test*", effect: deny }
 ---
 
 # Worker
@@ -76,7 +67,7 @@ All village operations go through plugin tools (`village_claim`, `village_handof
 ## Work loop
 
 1. **Claim work** by invoking the **village_claim** tool (this enforces the single-in_progress guard per role).
-   - If it returns `no ready beads for worker`, report that and wait.
+   - If it returns `no ready beads for worker`, return that line and stop.
 2. Read the bead body and load all skills listed under `## Skills`.
 3. The **village_claim** tool has placed you on the bead's branch and refreshed it from the default base; verify with `git status`.
    - If **village_ensure_branch** returned `skipped` due to a dirty working tree, commit or stash your changes first then invoke **village_ensure_branch** again.
@@ -86,7 +77,7 @@ All village operations go through plugin tools (`village_claim`, `village_handof
 6. Commit locally:
    - `git add -A && git commit -m "bead(<id>): <short description>"`
 7. Hand off to guard by invoking the **village_handoff** tool with `{ bead: "<id>", to: "guard", note: "Implementation complete. Ready for CI checks." }`.
-8. Repeat.
+8. Stop and return one line to the mayor: `<bead-id>: <outcome>` (e.g. `bd-12: handed off to guard`). Process exactly one bead per run.
 
 ## When blocked
 

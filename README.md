@@ -21,7 +21,7 @@ npx @technoch1ef/opencode-village init --all
 
 | Role | Responsibility |
 |------|---------------|
-| **mayor** | Research, plan, create epics and child beads with `village_scaffold` |
+| **mayor** | Research, plan, create epics and child beads with `village_scaffold`; runs worker/guard/inspector as subagents via `/village:work` |
 | **worker** | Implement bead tasks, make local commits, hand off to guard |
 | **guard** | Run tests/linters/build, hand off to inspector on green or return to worker |
 | **inspector** | Read-only judgment: AC coverage, scope check, regression sniff; close beads on approval |
@@ -29,11 +29,13 @@ npx @technoch1ef/opencode-village init --all
 
 **Handoff chain:** mayor → worker → guard → inspector → envoy (optional)
 
+You only talk to the **mayor**: plan the epic with it, then run `/village:work` in the same session. Mayor launches worker, guard and inspector as subagents, one bead at a time, until the work is done. It stops to ask you only when a bead is returned to it. Envoy never runs automatically — use `/village:envoy`.
+
 ## Commands
 
 | Command | Description |
 |---------|-------------|
-| `/village:work` | Trigger the work loop for the current agent's role |
+| `/village:work [epic]` | Mayor runs worker/guard/inspector until all ready work (or the named epic) is done |
 | `/village:board` | Show a read-only at-a-glance view of village state |
 | `/village:envoy` | Dispatch envoy to push a branch and open a PR for a bead or epic |
 | `/village:orphans` | Report and fix unassigned beads |
@@ -88,7 +90,7 @@ The `--force` flag overwrites existing agent prompts, commands, and skills with 
    npx @technoch1ef/opencode-village init --all
    ```
 2. Start OpenCode and verify the mayor agent loads as the default agent.
-3. Open a worker session and run `/village:work` to confirm the work loop starts.
+3. In the mayor session, run `/village:work` to confirm mayor launches the worker subagent.
 4. Run `/village:board` to verify the village state renders.
 
 ## License

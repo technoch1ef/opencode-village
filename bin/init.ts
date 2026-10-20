@@ -504,7 +504,7 @@ async function main(): Promise<void> {
     log("\nNext steps:");
     log("  1. Install the br CLI: https://github.com/Dicklesworthstone/beads_rust");
     log("  2. Restart OpenCode");
-    log("  3. Run /village:work in a worker session");
+    log("  3. Plan an epic with the mayor agent, then run /village:work");
   }
 }
 

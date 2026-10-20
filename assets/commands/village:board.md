@@ -1,3 +1,7 @@
+---
+agent: mayor
+---
+
 # /village:board
 
 Show a read-only at-a-glance view of village state.

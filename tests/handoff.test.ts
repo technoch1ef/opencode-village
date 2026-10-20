@@ -47,9 +47,12 @@ describe("HANDOFF_MATRIX", () => {
     expect(HANDOFF_MATRIX.inspector.has("envoy")).toBe(true);
   });
 
-  test("mayor can only hand off to worker", () => {
-    expect(HANDOFF_MATRIX.mayor.size).toBe(1);
+  test("mayor can hand off to worker, guard, inspector (not envoy)", () => {
+    expect(HANDOFF_MATRIX.mayor.size).toBe(3);
     expect(HANDOFF_MATRIX.mayor.has("worker")).toBe(true);
+    expect(HANDOFF_MATRIX.mayor.has("guard")).toBe(true);
+    expect(HANDOFF_MATRIX.mayor.has("inspector")).toBe(true);
+    expect(HANDOFF_MATRIX.mayor.has("envoy")).toBe(false);
   });
 
   test("envoy has no outgoing handoffs", () => {

@@ -1,3 +1,7 @@
+---
+agent: mayor
+---
+
 # /village:close
 
 Close the current in-progress bead immediately, bypassing all remaining village roles.

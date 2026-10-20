@@ -67,6 +67,19 @@ function groupByRole(beads: BrIssue[]): Map<string, BrIssue[]> {
 }
 
 /**
+ * Child ids of an epic from its `br show --json` record (`parent-child` dependents).
+ * Returns null when the record has no dependents list.
+ */
+export function epicChildIds(epic: Pick<BrIssue, "dependents"> | undefined): Set<string> | null {
+  if (!Array.isArray(epic?.dependents)) return null;
+  return new Set(
+    epic.dependents
+      .filter((d) => d.dependency_type === "parent-child")
+      .map((d) => d.id),
+  );
+}
+
+/**
  * Build the board data structure — a 2D map of `[row][role] → string[]`.
  */
 export type BoardData = Record<string, Record<string, string[]>>;
@@ -92,28 +105,15 @@ export async function buildBoardData(options: {
   let childIds: Set<string> | null = null;
   if (epic) {
     try {
-      const children = await execBrJson<BrIssue[]>(
-        ["children", epic, "--json"],
-        brOpts,
-      );
-      if (Array.isArray(children)) {
-        childIds = new Set(children.map((c) => c.id));
-      }
-    } catch {
-      // If children command fails, try listing all and filtering by parent.
-      childIds = null;
-    }
-
-    // Try to get epic title.
-    try {
       const epicData = await execBrJson<BrIssue[]>(
         ["show", epic, "--json"],
         brOpts,
       );
       const first = Array.isArray(epicData) ? epicData[0] : undefined;
       epicTitle = first?.title;
+      childIds = epicChildIds(first);
     } catch {
-      // Best-effort.
+      // Best-effort: fall back to an unscoped board.
     }
   }
 

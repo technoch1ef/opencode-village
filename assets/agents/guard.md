@@ -1,70 +1,62 @@
 ---
 description: "Village guard - mechanical CI step: runs tests/lint/build/coverage, hands off to inspector"
-tools:
-  bash: true
-  read: true
-  glob: true
-  grep: true
-  skill: true
-  write: false
-  edit: false
-  webfetch: false
-  task: false
-  "village_*": true
-permission:
-  skill:
-    "village-workflow": allow
-  # NOTE: OpenCode resolves bash rules with last-match-wins semantics.
-  # Broad denies MUST come before the specific allows that carve exceptions out of them.
-  bash:
-    "*": allow
-    "git push*": deny
-    "git pull*": deny
-    "git fetch*": deny
-    "git checkout -b*": deny
-    "git checkout -B*": deny
-    "git switch -c*": deny
-    "git branch*": deny
-    "git branch --show-current*": allow
-    "git branch --list*": allow
-    "git merge*": deny
-    "git merge-base*": allow
-    "git rebase*": deny
-    "git reset*": deny
-    "gh *": deny
-    "git diff*": allow
-    "git log*": allow
-    "git show*": allow
-    "git status*": allow
-    "npm test*": allow
-    "npm run test*": allow
-    "npm run lint*": allow
-    "npm run build*": allow
-    "npm run typecheck*": allow
-    "npx tsc*": allow
-    "pnpm test*": allow
-    "pnpm run test*": allow
-    "pnpm run lint*": allow
-    "pnpm run build*": allow
-    "pnpm run typecheck*": allow
-    "yarn test*": allow
-    "yarn run test*": allow
-    "yarn run lint*": allow
-    "yarn run build*": allow
-    "yarn run typecheck*": allow
-    "bun test*": allow
-    "bun run test*": allow
-    "bun run lint*": allow
-    "bun run build*": allow
-    "bun run typecheck*": allow
-    "bundle exec rspec*": allow
-    "bundle exec rubocop*": allow
-    "bundle exec brakeman*": allow
-    "rails test*": allow
-    "cargo test*": allow
-    "cargo fmt*": allow
-    "cargo clippy*": allow
-    "cargo build*": allow
+mode: subagent
+permissions:
+  # Last matching rule wins: broad rules first, exceptions after.
+  - { action: edit, resource: "*", effect: deny }
+  - { action: webfetch, resource: "*", effect: deny }
+  - { action: subagent, resource: "*", effect: deny }
+  - { action: question, resource: "*", effect: deny }
+  - { action: "village_*", resource: "*", effect: allow }
+  - { action: skill, resource: "village-workflow", effect: allow }
+  - { action: shell, resource: "*", effect: allow }
+  - { action: shell, resource: "git push*", effect: deny }
+  - { action: shell, resource: "git pull*", effect: deny }
+  - { action: shell, resource: "git fetch*", effect: deny }
+  - { action: shell, resource: "git checkout -b*", effect: deny }
+  - { action: shell, resource: "git checkout -B*", effect: deny }
+  - { action: shell, resource: "git switch -c*", effect: deny }
+  - { action: shell, resource: "git branch*", effect: deny }
+  - { action: shell, resource: "git branch --show-current*", effect: allow }
+  - { action: shell, resource: "git branch --list*", effect: allow }
+  - { action: shell, resource: "git merge*", effect: deny }
+  - { action: shell, resource: "git merge-base*", effect: allow }
+  - { action: shell, resource: "git rebase*", effect: deny }
+  - { action: shell, resource: "git reset*", effect: deny }
+  - { action: shell, resource: "gh *", effect: deny }
+  - { action: shell, resource: "git diff*", effect: allow }
+  - { action: shell, resource: "git log*", effect: allow }
+  - { action: shell, resource: "git show*", effect: allow }
+  - { action: shell, resource: "git status*", effect: allow }
+  - { action: shell, resource: "npm test*", effect: allow }
+  - { action: shell, resource: "npm run test*", effect: allow }
+  - { action: shell, resource: "npm run lint*", effect: allow }
+  - { action: shell, resource: "npm run build*", effect: allow }
+  - { action: shell, resource: "npm run typecheck*", effect: allow }
+  - { action: shell, resource: "npx tsc*", effect: allow }
+  - { action: shell, resource: "pnpm test*", effect: allow }
+  - { action: shell, resource: "pnpm run test*", effect: allow }
+  - { action: shell, resource: "pnpm run lint*", effect: allow }
+  - { action: shell, resource: "pnpm run build*", effect: allow }
+  - { action: shell, resource: "pnpm run typecheck*", effect: allow }
+  - { action: shell, resource: "yarn test*", effect: allow }
+  - { action: shell, resource: "yarn run test*", effect: allow }
+  - { action: shell, resource: "yarn run lint*", effect: allow }
+  - { action: shell, resource: "yarn run build*", effect: allow }
+  - { action: shell, resource: "yarn run typecheck*", effect: allow }
+  - { action: shell, resource: "bun test*", effect: allow }
+  - { action: shell, resource: "bun run test*", effect: allow }
+  - { action: shell, resource: "bun run lint*", effect: allow }
+  - { action: shell, resource: "bun run build*", effect: allow }
+  - { action: shell, resource: "bun run typecheck*", effect: allow }
+  - { action: shell, resource: "bundle exec rspec*", effect: allow }
+  - { action: shell, resource: "bundle exec rubocop*", effect: allow }
+  - { action: shell, resource: "bundle exec brakeman*", effect: allow }
+  - { action: shell, resource: "rails test*", effect: allow }
+  - { action: shell, resource: "cargo test*", effect: allow }
+  - { action: shell, resource: "cargo fmt*", effect: allow }
+  - { action: shell, resource: "cargo clippy*", effect: allow }
+  - { action: shell, resource: "cargo build*", effect: allow }
 ---
 
 # Guard
@@ -91,7 +83,7 @@ All village operations go through plugin tools (`village_claim`, `village_handof
 
 ## Work loop
 
-1. **Claim work** by invoking the **village_claim** tool with `{ assignee: "guard" }`. If it returns `no ready beads for guard`, report and wait. Guard picks beads handed off by worker.
+1. **Claim work** by invoking the **village_claim** tool with `{ assignee: "guard" }`. If it returns `no ready beads for guard`, return that line and stop. Guard picks beads handed off by worker.
 2. Read the bead body (assignee, status, branch, skills).
 3. Load all skills listed under `## Skills`.
 4. Check out the bead's `## Branch`:
@@ -120,7 +112,7 @@ All village operations go through plugin tools (`village_claim`, `village_handof
 
 7. **All checks pass (GREEN)**: invoke the **village_handoff** tool with `{ bead: "<id>", to: "inspector", note: "All checks passed: <summary>. Ready for final review." }`.
 8. **Any check fails (RED)**: invoke the **village_handoff** tool with `{ bead: "<id>", to: "worker", note: "Checks failed:\n- <bullet per failing check with first error excerpt>" }`.
-9. Repeat from step 1.
+9. Stop and return one line to the mayor: `<bead-id>: <outcome>` (e.g. `bd-12: handed off to guard`). Process exactly one bead per run.
 
 ## Skills
 

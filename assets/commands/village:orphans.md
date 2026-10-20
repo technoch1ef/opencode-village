@@ -1,3 +1,7 @@
+---
+agent: mayor
+---
+
 # /village:orphans
 
 Report and fix unassigned village beads.
