@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.1
+
+### Fixed
+
+- `village_scaffold` and `village_lint` no longer reject beads whose `## Skills` list plugin-provided or user skills (e.g. `ponytail`). The on-disk skills-registry check is removed: it only saw `skills/` folders and could not know about skills from plugins or other skill paths. `## Skills` still needs at least one entry.
+
 ## 1.1.0
 
 ### Changed

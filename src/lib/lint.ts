@@ -7,9 +7,6 @@
  * @module
  */
 
-import { readdir, stat } from "node:fs/promises";
-import { homedir } from "node:os";
-import { join } from "node:path";
 
 /**
  * Result of linting a bead body.
@@ -27,8 +24,6 @@ export type LintResult = {
 export type LintOptions = {
   /** When true, skip acceptance-criteria and branch checks (for epics). */
   isEpic?: boolean;
-  /** Set of known valid skill names. When provided, skills are validated against it. */
-  knownSkills?: Set<string>;
 };
 
 /**
@@ -64,7 +59,7 @@ function extractSection(body: string, sectionName: string): string | null {
  *
  * Required sections for non-epic beads:
  * - `## Context` — non-empty, not `(fill in)`
- * - `## Skills` — ≥1 skill, each must exist in skills registry (if provided)
+ * - `## Skills` — ≥1 skill
  * - `## Branch` — matches `^[a-z0-9/_-]+$`
  * - `## Acceptance Criteria` — ≥1 `- [ ]` checkbox
  *
@@ -73,7 +68,6 @@ function extractSection(body: string, sectionName: string): string | null {
 export function lintBeadBody(body: string, opts?: LintOptions): LintResult {
   const errors: string[] = [];
   const isEpic = opts?.isEpic ?? false;
-  const knownSkills = opts?.knownSkills;
 
   // --- ## Context ---
   const contextContent = extractSection(body, "Context");
@@ -96,14 +90,6 @@ export function lintBeadBody(body: string, opts?: LintOptions): LintResult {
     const skills = parseSkillList(skillsContent);
     if (skills.length === 0) {
       errors.push("## Skills must list at least one skill (e.g. `- village-workflow`)");
-    } else if (knownSkills) {
-      for (const skill of skills) {
-        if (!knownSkills.has(skill)) {
-          errors.push(
-            `unknown skill in ## Skills: "${skill}" — not found in skills registry`,
-          );
-        }
-      }
     }
   }
 
@@ -174,77 +160,4 @@ function parseBranchName(content: string): string | null {
   // Plain: take the first non-empty line
   const firstLine = trimmed.split("\n")[0]?.trim();
   return firstLine || null;
-}
-
-/**
- * Scan filesystem directories for skill names.
- *
- * Checks each directory for subdirectories (each subdirectory name = a skill name).
- * Directories that don't exist are silently skipped.
- *
- * @param dirs - Array of directory paths to scan
- * @returns Set of skill names found across all directories
- */
-export async function scanSkillRegistry(dirs: string[]): Promise<Set<string>> {
-  const skills = new Set<string>();
-
-  for (const dir of dirs) {
-    try {
-      const s = await stat(dir);
-      if (!s.isDirectory()) continue;
-    } catch {
-      continue;
-    }
-
-    try {
-      const entries = await readdir(dir, { withFileTypes: true });
-      for (const entry of entries) {
-        if (entry.isDirectory() && !entry.name.startsWith(".")) {
-          skills.add(entry.name);
-        }
-      }
-    } catch {
-      // Ignore permission errors etc.
-    }
-  }
-
-  return skills;
-}
-
-/**
- * Resolve the OpenCode global config directory.
- *
- * Precedence:
- *   1. `OPENCODE_CONFIG_DIR` (if set and non-empty)
- *   2. `${XDG_CONFIG_HOME ?? ~/.config}/opencode`
- */
-function resolveGlobalConfigDir(): string {
-  const explicit = process.env.OPENCODE_CONFIG_DIR;
-  if (explicit && explicit.length > 0) return explicit;
-  const xdg = process.env.XDG_CONFIG_HOME;
-  const base = xdg && xdg.length > 0 ? xdg : join(homedir(), ".config");
-  return join(base, "opencode");
-}
-
-/**
- * Build the default skill registry paths for the OpenCode config directory.
- *
- * Returns the project-local skill paths plus the OpenCode global config dir's
- * `skills` and `skills-private` directories so globally-installed skills (e.g.
- * those installed via `opencode-village init --all`) are recognized by the
- * scaffold/lint validators.
- *
- * The returned array is de-duplicated to handle the case where the project
- * itself happens to be the global config dir.
- */
-export function defaultSkillRegistryPaths(configDir: string): string[] {
-  const globalConfigDir = resolveGlobalConfigDir();
-  const paths = [
-    join(configDir, "assets", "skills"),
-    join(configDir, "skills"),
-    join(configDir, "skills-private"),
-    join(globalConfigDir, "skills"),
-    join(globalConfigDir, "skills-private"),
-  ];
-  return Array.from(new Set(paths));
 }

@@ -6,11 +6,7 @@
 
 import { tool } from "../lib/tool";
 import { execBrJson, firstBrIssue } from "../lib/br";
-import {
-  defaultSkillRegistryPaths,
-  lintBeadBody,
-  scanSkillRegistry,
-} from "../lib/lint";
+import { lintBeadBody } from "../lib/lint";
 import type { SessionHelpers } from "../lib/sessions";
 import type { BrIssue } from "../lib/shared";
 
@@ -228,10 +224,6 @@ export function createScaffoldTool(helpers: SessionHelpers) {
         return ["dry_run: true", ...planLines].join("\n");
       }
 
-      // Scan the skills registry for validation.
-      const registryPaths = defaultSkillRegistryPaths(directory);
-      const knownSkills = await scanSkillRegistry(registryPaths);
-
       // Pre-render all child descriptions and lint them before creating anything.
       const childDescriptions: string[] = [];
       const lintErrors: string[] = [];
@@ -250,7 +242,7 @@ export function createScaffoldTool(helpers: SessionHelpers) {
         childDescriptions.push(childDescription);
 
         // Children of a scaffold are never epics (only the parent is).
-        const lint = lintBeadBody(childDescription, { isEpic: false, knownSkills });
+        const lint = lintBeadBody(childDescription, { isEpic: false });
         if (!lint.ok) {
           lintErrors.push(
             `Child "${c.title}":\n${lint.errors.map((e) => `  - ${e}`).join("\n")}`,

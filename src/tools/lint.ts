@@ -9,11 +9,7 @@
 
 import { tool } from "../lib/tool";
 import { execBrJson } from "../lib/br";
-import {
-  defaultSkillRegistryPaths,
-  lintBeadBody,
-  scanSkillRegistry,
-} from "../lib/lint";
+import { lintBeadBody } from "../lib/lint";
 import type { SessionHelpers } from "../lib/sessions";
 import type { BrIssue } from "../lib/shared";
 
@@ -52,11 +48,8 @@ export function createLintTool(helpers: SessionHelpers) {
 
       const isEpic = (issue.issue_type ?? "").toLowerCase() === "epic";
 
-      // Scan skills registry.
-      const registryPaths = defaultSkillRegistryPaths(directory);
-      const knownSkills = await scanSkillRegistry(registryPaths);
 
-      const result = lintBeadBody(body, { isEpic, knownSkills });
+      const result = lintBeadBody(body, { isEpic });
 
       if (result.ok) {
         return `${beadId}: OK — all required sections present and valid`;
